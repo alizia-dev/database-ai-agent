@@ -1,0 +1,42 @@
+.section {
+  margin-bottom: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 16px;
+  padding-top: 12px;
+}
+
+.full {
+  width: 100%;
+}
+
+.subheading {
+  font: var(--mat-sys-title-small);
+  margin: 8px 0 0;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  padding-top: 12px;
+}
+
+.grow {
+  flex: 1 1 280px;
+}
+
+.inline-form button {
+  margin-top: 8px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}

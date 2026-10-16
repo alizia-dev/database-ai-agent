@@ -18,6 +18,9 @@ public sealed class LayeringTests
 
     public static TheoryData<string> FeatureModuleNames => new(FeatureModules);
 
+    /// <summary>The only framework package Domain may use: Identity's POCO base classes for User/Role.</summary>
+    private static readonly string[] DomainAllowedMicrosoftAssemblies = ["Microsoft.Extensions.Identity.Stores"];
+
     [Fact]
     public void Domain_DependsOnNoOtherProjectAndNoFrameworkInfrastructure()
     {
@@ -26,6 +29,9 @@ public sealed class LayeringTests
         Assert.DoesNotContain(references, r => r.StartsWith(Prefix, StringComparison.Ordinal));
         Assert.DoesNotContain(references, r => r.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal));
         Assert.DoesNotContain(references, r => r.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
+        Assert.All(
+            references.Where(r => r.StartsWith("Microsoft.", StringComparison.Ordinal)),
+            r => Assert.Contains(r, DomainAllowedMicrosoftAssemblies));
     }
 
     [Fact]

@@ -12,6 +12,13 @@ public sealed class ApiSecurityOptions
     [Range(1, 100_000)]
     public int RateLimitPermitsPerMinute { get; set; } = 300;
 
+    /// <summary>Per-IP limit for login, registration, password reset, verification and invitation endpoints.</summary>
+    [Range(1, 10_000)]
+    public int AuthRateLimitPermitsPerMinute { get; set; } = 10;
+
+    [Range(1, 10_000)]
+    public int RefreshRateLimitPermitsPerMinute { get; set; } = 30;
+
     /// <summary>Maximum request body in bytes. File uploads get their own, explicit limits.</summary>
     [Range(1_024, 100 * 1024 * 1024)]
     public long MaxRequestBodyBytes { get; set; } = 1 * 1024 * 1024;

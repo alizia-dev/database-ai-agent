@@ -4,6 +4,9 @@
 appsettings.*.local.json
 secrets.json
 
+# Local development email pickup folder
+mail-pickup/
+
 # .NET
 bin/
 obj/

@@ -1,0 +1,54 @@
+.shell {
+  height: 100%;
+}
+
+.sidenav {
+  width: 240px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+}
+
+.workspace-name {
+  padding: 20px 16px 12px;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--mat-sys-surface);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.brand {
+  font: var(--mat-sys-title-medium);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.user-name {
+  margin-left: 6px;
+}
+
+.menu-identity {
+  padding: 8px 16px 12px;
+  font: var(--mat-sys-body-medium);
+}
+
+.page {
+  padding: 24px;
+  max-width: 1200px;
+}
+
+@media (max-width: 599px) {
+  .page {
+    padding: 16px;
+  }
+
+  .user-name {
+    display: none;
+  }
+}

@@ -36,6 +36,17 @@ cd client/database-ai-agent-web && npm start                            # http:/
 In Development, migrations are applied automatically at startup (`PlatformDatabase:ApplyMigrationsOnStartup`).
 In every other environment, apply migrations in the deployment pipeline (documented in Deployment.md, Phase 12). Never change the production schema by hand.
 
+## First run: create the Owner
+
+1. Open the web app and choose **Create the owner account** (`/register`). The first account becomes the workspace **Owner**; registration then closes (invitation only).
+2. Open the verification email:
+   - `docker compose`: Mailpit at http://localhost:8025
+   - API run locally in Development: `.eml` files in `src/DatabaseAIAgent.Api/mail-pickup/` (`Email:Transport=PickupDirectory`)
+3. Follow the link, sign in, and invite teammates from **Team**.
+
+Development needs no JWT key (an ephemeral one is generated; you stay signed in across restarts because refresh
+tokens are stored in the database). Every other environment requires `Jwt__SigningKey` (`JWT_SECRET`).
+
 ## Build and test
 
 ```bash

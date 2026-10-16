@@ -5,4 +5,17 @@
     <ProjectReference Include="..\DatabaseAIAgent.Domain\DatabaseAIAgent.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DatabaseAIAgent.UnitTests" />
+    <InternalsVisibleTo Include="DatabaseAIAgent.Api.Tests" />
+  </ItemGroup>
+
 </Project>

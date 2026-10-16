@@ -4,7 +4,6 @@ using DatabaseAIAgent.Billing;
 using DatabaseAIAgent.Database;
 using DatabaseAIAgent.Infrastructure;
 using DatabaseAIAgent.Rag;
-using DatabaseAIAgent.Security;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console(formatProvider: CultureInfo.InvariantCulture).CreateBootstrapLogger();
@@ -25,7 +24,6 @@ try
     builder.Services
         .AddApplication()
         .AddInfrastructure(builder.Configuration)
-        .AddSecurityModule()
         .AddBillingModule()
         .AddDatabaseModule()
         .AddRagModule();

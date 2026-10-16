@@ -1,0 +1,56 @@
+.invite-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  padding-top: 16px;
+}
+
+.grow {
+  flex: 1 1 260px;
+}
+
+.invite-form button {
+  margin-top: 8px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.role-select {
+  width: 130px;
+}
+
+.row-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.empty {
+  padding: 16px 0;
+}
+
+.matrix {
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.matrix th,
+.matrix td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+.matrix td {
+  text-align: center;
+}

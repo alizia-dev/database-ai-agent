@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
@@ -9,7 +10,7 @@ type ApiStatus = { state: 'checking' } | { state: 'online'; version: string } | 
 
 @Component({
   selector: 'app-public-shell',
-  imports: [RouterOutlet, RouterLink, MatToolbarModule],
+  imports: [RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule],
   templateUrl: './public-shell.html',
   styleUrl: './public-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

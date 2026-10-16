@@ -47,13 +47,23 @@ tests/
 Api, Workers ──► every module ──► Application ──► Domain
 ```
 
-- Domain references no project and no framework infrastructure (EF Core, ASP.NET Core).
+- Domain references no project and no framework infrastructure (EF Core, ASP.NET Core). The single exception is
+  `Microsoft.Extensions.Identity.Stores`, whose POCO base classes `User` and `Role` derive from.
 - Application references only Domain.
 - Feature modules and Infrastructure reference only Application and Domain. They never reference each other;
   cross-module collaboration goes through interfaces declared in Application and implemented by the owning module.
 - Nothing references the host projects.
 
 Both declared `ProjectReference`s and compiled assembly references are checked by the architecture tests.
+
+## Identity and access
+
+- `Infrastructure` registers the Identity stores on `PlatformDbContext` (users, roles, tokens, data-protection keys).
+- `Security` owns the auth use cases (`AuthService`, `UserManagementService`, `RoleService`), token issuing, the
+  permission cache (`IPermissionService`, declared in Application so every module can authorize) and session validation.
+- `Api` maps HTTP: bearer authentication, `[RequirePermission]` policies, the refresh-token cookie and request validation.
+- Persistence that Security needs (refresh tokens, invitations, role permissions) is behind repository interfaces in
+  Application, keeping EF Core out of feature modules.
 
 ## Request pipeline (API)
 
@@ -64,8 +74,10 @@ Both declared `ProjectReference`s and compiled assembly references are checked b
 5. Security headers (nosniff, DENY framing, no-referrer, strict CSP for JSON)
 6. HSTS and HTTPS redirect (non-development)
 7. CORS: explicit origins only, no wildcards (validated at startup)
-8. Global rate limiter (per client IP, configurable)
-9. Controllers and health checks (`/health/live`, `/health/ready`)
+8. Authentication (JWT bearer and live-session check)
+9. Rate limiting: global per IP, plus stricter `auth`/`refresh` policies
+10. Authorization: every endpoint requires an authenticated user unless `[AllowAnonymous]`; `[RequirePermission]` for sensitive actions
+11. Request validation (FluentValidation filter), then controllers and health checks (`/health/live`, `/health/ready`)
 
 Kestrel enforces a global request body limit (`ApiSecurity:MaxRequestBodyBytes`); upload endpoints set their own limits.
 

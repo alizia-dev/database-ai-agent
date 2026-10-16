@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Lets the pins below override vulnerable transitive versions. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup Label="ASP.NET Core / hosting">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
@@ -10,6 +12,15 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
+  </ItemGroup>
+  <ItemGroup Label="Identity / auth / email">
+    <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
+    <!-- Keep aligned with the version JwtBearer depends on; mixed Microsoft.IdentityModel.* versions break token validation. -->
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.19.2" />
+    <PackageVersion Include="MailKit" Version="4.18.1" />
   </ItemGroup>
   <ItemGroup Label="Data">
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
@@ -31,6 +42,10 @@
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Transitive security pins">
+    <!-- MimeKit 4.18.1 depends on 10.0.0 (GHSA-2fmv-rv2c-59x7, GHSA-846f-f764-76mx). -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />

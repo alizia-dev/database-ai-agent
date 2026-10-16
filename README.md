@@ -27,7 +27,9 @@ See [docs/Development.md](docs/Development.md) for the local inner loop, tests a
 - [Implementation plan and phase status](docs/ImplementationPlan.md)
 - [Architecture](docs/Architecture.md)
 - [Development](docs/Development.md)
+- [Security](docs/Security.md)
+- [API](docs/API.md)
 - Product specification: [docs/claude-code-prompt.md](docs/claude-code-prompt.md)
 
-The remaining guides (Deployment, Security, connectors, AI providers, RAG, tool calling, billing, API, onboarding)
+The remaining guides (Deployment, connectors, AI providers, RAG, tool calling, billing, onboarding)
 are written in the phase that implements each area.

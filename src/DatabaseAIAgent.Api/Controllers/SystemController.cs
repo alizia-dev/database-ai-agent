@@ -1,10 +1,12 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DatabaseAIAgent.Api.Controllers;
 
 [ApiController]
 [Route("api/system")]
+[AllowAnonymous]
 public sealed class SystemController(IHostEnvironment environment) : ControllerBase
 {
     /// <summary>Public, non-sensitive build information used by the web client to confirm API reachability.</summary>

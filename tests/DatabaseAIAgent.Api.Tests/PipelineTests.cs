@@ -10,6 +10,7 @@ namespace DatabaseAIAgent.Api.Tests;
 public sealed class PipelineTests(ApiFactory factory)
 {
     private readonly HttpClient _client = factory.CreateClient();
+    private readonly TestApi _api = new(factory);
 
     [Fact]
     public async Task LiveHealth_ReturnsHealthyWithoutDependencies()
@@ -60,7 +61,8 @@ public sealed class PipelineTests(ApiFactory factory)
     [Fact]
     public async Task UnhandledException_ReturnsGenericProblemWithoutInternalDetails()
     {
-        var response = await _client.GetAsync(ApiFactory.ThrowPath, TestContext.Current.CancellationToken);
+        var owner = await _api.OwnerAsync();
+        var response = await _api.GetAsync(ApiFactory.ThrowPath, owner.AccessToken);
         var raw = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
@@ -95,11 +97,16 @@ public sealed class PipelineTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task UnknownRoute_ReturnsProblemDetails404()
+    public async Task UnknownRoute_IsUnauthorizedForAnonymousCallers_AndNotFoundWhenSignedIn()
     {
-        var response = await _client.GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
+        var owner = await _api.OwnerAsync();
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var anonymous = await _client.GetAsync("/api/does-not-exist", TestContext.Current.CancellationToken);
+        var signedIn = await _api.GetAsync("/api/does-not-exist", owner.AccessToken);
+
+        // Authentication is required by default, so anonymous callers cannot probe which routes exist.
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, signedIn.StatusCode);
     }
 
     private async Task<HttpResponseMessage> PreflightAsync(string origin)

@@ -1,9 +1,10 @@
 using System.Globalization;
-using System.Threading.RateLimiting;
+using System.Text.Json.Serialization;
 using DatabaseAIAgent.Agent;
 using DatabaseAIAgent.Api.Configuration;
 using DatabaseAIAgent.Api.Errors;
 using DatabaseAIAgent.Api.Middleware;
+using DatabaseAIAgent.Api.Validation;
 using DatabaseAIAgent.Application;
 using DatabaseAIAgent.Billing;
 using DatabaseAIAgent.Database;
@@ -12,7 +13,9 @@ using DatabaseAIAgent.Infrastructure.Persistence;
 using DatabaseAIAgent.Rag;
 using DatabaseAIAgent.Security;
 using DatabaseAIAgent.Tools;
+using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -46,14 +49,17 @@ try
     builder.Services
         .AddApplication()
         .AddInfrastructure(builder.Configuration)
-        .AddSecurityModule()
+        .AddSecurityModule(builder.Configuration, builder.Environment)
         .AddBillingModule()
         .AddDatabaseModule()
         .AddToolsModule()
         .AddRagModule()
         .AddAgentModule();
 
-    builder.Services.AddControllers();
+    builder.Services.AddPlatformAuthentication();
+    builder.Services.AddValidatorsFromAssemblyContaining<ValidationFilter>(includeInternalTypes: true);
+    builder.Services.AddControllers(options => options.Filters.Add<ValidationFilter>())
+        .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
     builder.Services.AddOpenApi();
     builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     {
@@ -69,19 +75,7 @@ try
         .AllowCredentials()
         .WithExposedHeaders(CorrelationIdMiddleware.HeaderName)));
 
-    builder.Services.AddRateLimiter(options =>
-    {
-        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-            RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = security.RateLimitPermitsPerMinute,
-                    Window = TimeSpan.FromMinutes(1),
-                    QueueLimit = 0,
-                }));
-    });
+    builder.Services.AddPlatformRateLimiting(security);
 
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
@@ -106,8 +100,8 @@ try
 
     if (app.Environment.IsDevelopment())
     {
-        app.MapOpenApi();
-        app.MapScalarApiReference();
+        app.MapOpenApi().AllowAnonymous();
+        app.MapScalarApiReference().AllowAnonymous();
     }
     else
     {
@@ -116,10 +110,15 @@ try
     }
 
     app.UseCors();
+    app.UseAuthentication();
     app.UseRateLimiter();
+    app.UseAuthorization();
 
     app.MapControllers();
     app.MapPlatformHealthChecks();
+
+    // Fail fast on invalid configuration (e.g. missing signing key) before touching the database.
+    app.Services.GetRequiredService<IStartupValidator>().Validate();
 
     if (!app.Environment.IsEnvironment("Testing"))
     {

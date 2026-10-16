@@ -34,8 +34,10 @@ internal static class HealthCheckExtensions
     public static void MapPlatformHealthChecks(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false, ResponseWriter = WriteAsync })
+            .AllowAnonymous()
             .DisableRateLimiting();
         endpoints.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains(ReadyTag), ResponseWriter = WriteAsync })
+            .AllowAnonymous()
             .DisableRateLimiting();
     }
 

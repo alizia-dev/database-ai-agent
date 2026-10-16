@@ -37,3 +37,85 @@ body {
   height: 100%;
 }
 /* You can add global styles to this file, and also import other style files */
+
+// ---- Shared layout primitives --------------------------------------------------------------
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+}
+
+.auth-card mat-card-content {
+  padding-top: 16px;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--mat-sys-surface-container);
+  font: var(--mat-sys-body-medium);
+  margin: 0 0 12px;
+}
+
+.notice.error {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.page-title {
+  font: var(--mat-sys-headline-small);
+  margin: 0 0 4px;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.plain-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0 0 12px;
+}
+
+.facts dt {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.facts dd {
+  margin: 0;
+}

@@ -1,0 +1,138 @@
+<h1 class="page-title">Settings</h1>
+@if (loadError()) {
+  <p class="notice error" role="alert">{{ loadError() }}</p>
+}
+
+<mat-card appearance="outlined" class="section">
+  <mat-card-header>
+    <mat-card-title>Workspace</mat-card-title>
+    <mat-card-subtitle>
+      @if (canEditWorkspace()) {
+        How the assistant introduces itself and formats answers for your business.
+      } @else {
+        Only administrators can change these settings.
+      }
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <form [formGroup]="workspaceForm" (ngSubmit)="saveWorkspace()" novalidate>
+      <div class="grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Workspace name</mat-label>
+          <input matInput formControlName="name" />
+          <mat-error><app-form-error [control]="workspaceForm.controls.name" label="Workspace name" /></mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Industry</mat-label>
+          <input matInput formControlName="industry" placeholder="e.g. Manufacturing" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Assistant name</mat-label>
+          <input matInput formControlName="assistantName" />
+          <mat-error><app-form-error [control]="workspaceForm.controls.assistantName" label="Assistant name" /></mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Response style</mat-label>
+          <mat-select formControlName="responseStyle">
+            @for (style of responseStyles; track style) {
+              <mat-option [value]="style">{{ style }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Time zone</mat-label>
+          <input matInput formControlName="timeZone" placeholder="e.g. America/New_York" />
+          <mat-hint>IANA time zone id</mat-hint>
+          <mat-error><app-form-error [control]="workspaceForm.controls.timeZone" label="Time zone" /></mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Currency</mat-label>
+          <input matInput formControlName="currency" maxlength="3" placeholder="USD" />
+          <mat-hint>3-letter ISO code</mat-hint>
+          <mat-error><app-form-error [control]="workspaceForm.controls.currency" label="Currency" /></mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Date format</mat-label>
+          <input matInput formControlName="dateFormat" placeholder="yyyy-MM-dd" />
+          <mat-error><app-form-error [control]="workspaceForm.controls.dateFormat" label="Date format" /></mat-error>
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Business description</mat-label>
+        <textarea matInput formControlName="businessDescription" rows="3" placeholder="What your business does, so answers use the right context."></textarea>
+      </mat-form-field>
+
+      <h3 class="subheading">Data retention (days, empty keeps indefinitely)</h3>
+      <div class="grid" formGroupName="retention">
+        <mat-form-field appearance="outline">
+          <mat-label>Conversations</mat-label>
+          <input matInput type="number" formControlName="conversationDays" min="1" max="3650" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Audit logs</mat-label>
+          <input matInput type="number" formControlName="auditLogDays" min="1" max="3650" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Usage records</mat-label>
+          <input matInput type="number" formControlName="usageRecordDays" min="1" max="3650" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Knowledge documents</mat-label>
+          <input matInput type="number" formControlName="knowledgeDocumentDays" min="1" max="3650" />
+        </mat-form-field>
+      </div>
+
+      @if (canEditWorkspace()) {
+        <button mat-flat-button type="submit" [disabled]="saving() === 'workspace' || workspaceForm.pristine">Save workspace settings</button>
+      }
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="section">
+  <mat-card-header>
+    <mat-card-title>Your profile</mat-card-title>
+    <mat-card-subtitle>{{ auth.user()?.email }} &middot; {{ auth.user()?.role }}</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="inline-form" novalidate>
+      <mat-form-field appearance="outline" class="grow">
+        <mat-label>Display name</mat-label>
+        <input matInput formControlName="displayName" autocomplete="name" />
+        <mat-error><app-form-error [control]="profileForm.controls.displayName" label="Name" /></mat-error>
+      </mat-form-field>
+      <button mat-stroked-button type="submit" [disabled]="saving() === 'profile' || profileForm.pristine">Save</button>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="section">
+  <mat-card-header>
+    <mat-card-title>Password &amp; sessions</mat-card-title>
+    <mat-card-subtitle>Changing your password signs out every other device.</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="grid" novalidate>
+      <mat-form-field appearance="outline">
+        <mat-label>Current password</mat-label>
+        <input matInput type="password" formControlName="currentPassword" autocomplete="current-password" />
+        <mat-error><app-form-error [control]="passwordForm.controls.currentPassword" label="Current password" /></mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>New password</mat-label>
+        <input matInput type="password" formControlName="newPassword" autocomplete="new-password" />
+        <mat-hint>{{ passwordHint }}</mat-hint>
+        <mat-error><app-form-error [control]="passwordForm.controls.newPassword" label="New password" /></mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Confirm new password</mat-label>
+        <input matInput type="password" formControlName="confirm" autocomplete="new-password" />
+        <mat-error><app-form-error [control]="passwordForm.controls.confirm" label="Confirmation" /></mat-error>
+      </mat-form-field>
+      <div class="actions">
+        <button mat-flat-button type="submit" [disabled]="saving() === 'password'">Change password</button>
+        <button mat-button type="button" (click)="logoutEverywhere()">Sign out of all devices</button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

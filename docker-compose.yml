@@ -32,6 +32,13 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
+  # Local SMTP catcher: every email the platform sends is visible at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
   # Isolated demo customer database (Demo CRM). Never holds real customer data.
   demo-sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -55,6 +62,13 @@ services:
       PlatformDatabase__ApplyMigrationsOnStartup: "true"
       ApiSecurity__AllowedOrigins__0: http://localhost:4200
       ApiSecurity__AllowedOrigins__1: http://localhost:8081
+      App__PublicUrl: http://localhost:8081
+      Jwt__SigningKey: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      Email__Transport: Smtp
+      Email__SmtpHost: mailpit
+      Email__SmtpPort: "1025"
+      Email__SmtpUseTls: "false"
+      Email__FromAddress: no-reply@database-ai-agent.local
     ports:
       - "5080:8080"
     depends_on:
@@ -62,6 +76,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   workers:
     build:
@@ -71,6 +87,11 @@ services:
       DOTNET_ENVIRONMENT: Development
       ConnectionStrings__Platform: ${POSTGRES_CONNECTION_STRING}
       ConnectionStrings__Redis: ${REDIS_CONNECTION_STRING}
+      Email__Transport: Smtp
+      Email__SmtpHost: mailpit
+      Email__SmtpPort: "1025"
+      Email__SmtpUseTls: "false"
+      Email__FromAddress: no-reply@database-ai-agent.local
     depends_on:
       api:
         condition: service_started
