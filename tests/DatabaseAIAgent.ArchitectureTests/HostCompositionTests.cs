@@ -1,6 +1,8 @@
 using DatabaseAIAgent.Workers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 
 namespace DatabaseAIAgent.ArchitectureTests;
 
@@ -17,13 +19,25 @@ public sealed class HostCompositionTests
                 ["App:PublicUrl"] = "https://app.example.test",
                 ["Email:Transport"] = "PickupDirectory",
                 ["Email:FromAddress"] = "no-reply@example.test",
+                ["Encryption:Key"] = Convert.ToBase64String(new byte[32]),
             })
             .Build();
 
         var services = new ServiceCollection().AddLogging();
         services.AddSingleton<IConfiguration>(configuration);
-        services.AddWorkerServices(configuration);
+        services.AddWorkerServices(configuration, new TestEnvironment());
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+    }
+
+    private sealed class TestEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Testing";
+
+        public string ApplicationName { get; set; } = "DatabaseAIAgent.Workers";
+
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }

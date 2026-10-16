@@ -64,6 +64,8 @@ services:
       ApiSecurity__AllowedOrigins__1: http://localhost:8081
       App__PublicUrl: http://localhost:8081
       Jwt__SigningKey: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      Encryption__Key: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY in .env}
+      DatabaseConnections__AllowPrivateNetworks: "true"
       Email__Transport: Smtp
       Email__SmtpHost: mailpit
       Email__SmtpPort: "1025"
@@ -102,6 +104,8 @@ services:
       Email__SmtpUseTls: "false"
       Email__FromAddress: no-reply@database-ai-agent.local
       App__PublicUrl: http://localhost:8081
+      Encryption__Key: ${ENCRYPTION_KEY}
+      DatabaseConnections__AllowPrivateNetworks: "true"
       Billing__AccountReference: ${BILLING_ACCOUNT_REFERENCE:-local-compose}
       Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
       Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}

@@ -1,0 +1,94 @@
+.back {
+  margin: 0 0 8px -8px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+@media (max-width: 1023px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  column-gap: 16px;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 599px) {
+  .wide {
+    grid-column: auto;
+  }
+}
+
+.full {
+  width: 100%;
+}
+
+.mode {
+  margin: 4px 0 16px;
+}
+
+.result {
+  border: 1px solid var(--mat-sys-error);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0 16px;
+}
+
+.result.ok {
+  border-color: var(--mat-sys-primary);
+}
+
+.result h2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font: var(--mat-sys-title-small);
+  margin: 0 0 8px;
+}
+
+.warning {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 4px 0;
+  font: var(--mat-sys-body-medium);
+}
+
+.warning mat-icon {
+  color: var(--mat-sys-tertiary);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.script {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--mat-sys-surface-container);
+  border-radius: 6px;
+  padding: 12px;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  max-height: 360px;
+  overflow: auto;
+}

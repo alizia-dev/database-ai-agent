@@ -63,6 +63,22 @@ Customer data is not stored as a copy of the source database.
   details are logged with error codes, not shown to users.
 - Invoice links from providers are stored only if they are `https`.
 
+## Customer database connections (Phase 4)
+
+- Credentials are encrypted with AES-256-GCM, bound to the connection ID, with key rotation support. The key comes
+  from the secret manager (`ENCRYPTION_KEY`), and startup fails without it outside Development. Credentials are never
+  returned by the API or logged.
+- Connection strings are built only by driver builders from validated fields plus fixed safe options. Pasted strings
+  are parsed and unsupported options dropped (e.g. SQL Server `AttachDBFilename`, MySQL `AllowLoadLocalInfile`).
+- SSRF protection: the host syntax is restricted, and every resolved address is checked on save, test and each open.
+  Metadata and link-local addresses are always blocked; loopback and private ranges are blocked unless explicitly
+  allowed. Connection tests are rate limited.
+- Each test inspects the account's privileges and warns when the account is not least-privilege. Driver error
+  messages are mapped to safe categories.
+- Connecting requires `database.manage` plus a plan with production access, and is limited by the plan's
+  connection count.
+- See [DatabaseConnectors.md](DatabaseConnectors.md).
+
 ## HTTP hardening (Phase 1)
 
 Security headers (nosniff, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a restrictive CSP for JSON

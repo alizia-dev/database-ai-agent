@@ -1,0 +1,152 @@
+<a mat-button routerLink="/app/database" class="back"><mat-icon>arrow_back</mat-icon>Databases</a>
+<h1 class="page-title">{{ isEdit ? 'Edit connection' : 'Connect a database' }}</h1>
+<p class="muted">
+  The platform connects to your existing database; nothing is migrated or copied. Credentials are encrypted and are
+  never shown again after saving.
+</p>
+
+@if (busy() === 'loading') {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="layout">
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div class="grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Connection name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. CRM production" />
+            <mat-error><app-form-error [control]="form.controls.name" label="Name" /></mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Database type</mat-label>
+            <mat-select formControlName="provider">
+              @for (p of providers(); track p.kind) {
+                <mat-option [value]="p.kind">{{ p.displayName }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-button-toggle-group class="mode" [value]="mode()" (change)="setMode($event.value)" aria-label="How to enter connection details">
+          <mat-button-toggle value="fields">Enter details</mat-button-toggle>
+          <mat-button-toggle value="connectionString">Paste connection string</mat-button-toggle>
+        </mat-button-toggle-group>
+
+        @if (mode() === 'fields') {
+          <div class="grid">
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Host</mat-label>
+              <input matInput formControlName="host" placeholder="db.example.com" autocomplete="off" />
+              <mat-hint>Host name or IP address only</mat-hint>
+              <mat-error><app-form-error [control]="form.controls.host" label="Host" /></mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Port</mat-label>
+              <input matInput type="number" formControlName="port" [placeholder]="'' + (selectedProvider()?.defaultPort ?? '')" />
+              <mat-error><app-form-error [control]="form.controls.port" label="Port" /></mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Database</mat-label>
+              <input matInput formControlName="database" autocomplete="off" />
+              <mat-error><app-form-error [control]="form.controls.database" label="Database" /></mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Username</mat-label>
+              <input matInput formControlName="username" autocomplete="off" />
+              @if (isEdit) {
+                <mat-hint>Leave empty to keep the saved credentials</mat-hint>
+              }
+              <mat-error><app-form-error [control]="form.controls.username" label="Username" /></mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Password</mat-label>
+              <input matInput type="password" formControlName="password" autocomplete="new-password" />
+              <mat-error><app-form-error [control]="form.controls.password" label="Password" /></mat-error>
+            </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Transport security (TLS)</mat-label>
+            <mat-select formControlName="tlsMode">
+              @for (t of tlsModes; track t[0]) {
+                <mat-option [value]="t[0]">{{ t[1] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Connection string</mat-label>
+            <textarea matInput formControlName="connectionString" rows="3" autocomplete="off" spellcheck="false"></textarea>
+            <mat-hint>Host, port, database, user, password and TLS settings are used; other options are ignored for safety.</mat-hint>
+            <mat-error><app-form-error [control]="form.controls.connectionString" label="Connection string" /></mat-error>
+          </mat-form-field>
+        }
+
+        @if (error()) {
+          <p class="notice error" role="alert">{{ error() }}</p>
+        }
+
+        @if (busy() === 'testing' || busy() === 'saving') {
+          <mat-progress-bar mode="indeterminate" />
+        }
+
+        @if (test(); as t) {
+          <section class="result" [class.ok]="t.succeeded" role="status" aria-live="polite">
+            <h2><mat-icon aria-hidden="true">{{ t.succeeded ? 'check_circle' : 'error' }}</mat-icon>{{ t.message }}</h2>
+            @if (t.succeeded) {
+              <dl class="facts">
+                <dt>Server</dt>
+                <dd>{{ t.serverVersion }}</dd>
+                <dt>Response time</dt>
+                <dd>{{ t.durationMs }} ms</dd>
+                @if (t.permissions) {
+                  <dt>Executable procedures</dt>
+                  <dd>{{ t.permissions.executableProcedureCount }}</dd>
+                  <dt>Direct table access</dt>
+                  <dd>{{ t.permissions.canWriteData ? 'Read and write' : t.permissions.canReadTablesDirectly ? 'Read' : 'None' }}</dd>
+                  <dt>Administrator</dt>
+                  <dd>{{ t.permissions.isAdministrator ? 'Yes' : 'No' }}</dd>
+                }
+              </dl>
+            }
+            @for (w of t.warnings; track w) {
+              <p class="warning"><mat-icon aria-hidden="true">warning</mat-icon><span>{{ w }}</span></p>
+            }
+            @if (t.ignoredOptions.length > 0) {
+              <p class="muted small">Ignored connection-string options: {{ t.ignoredOptions.join(', ') }}</p>
+            }
+          </section>
+        }
+
+        <div class="actions">
+          <button mat-stroked-button type="button" (click)="runTest()" [disabled]="busy() !== null">Test connection</button>
+          <button mat-flat-button type="submit" [disabled]="busy() !== null">{{ isEdit ? 'Test and save' : 'Test and connect' }}</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-accordion class="help">
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>Create a least-privilege account (recommended)</mat-panel-title>
+      </mat-expansion-panel-header>
+      <p class="muted small">
+        Give the platform an account that can only execute the stored procedures you approve, with no direct access to
+        tables. Run this as an administrator, then enter the new account above.
+      </p>
+      <pre class="script" tabindex="0">{{ setupScript() }}</pre>
+      <button mat-stroked-button type="button" (click)="copyScript()"><mat-icon>content_copy</mat-icon>Copy script</button>
+    </mat-expansion-panel>
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>Network access</mat-panel-title>
+      </mat-expansion-panel-header>
+      <p class="muted small">
+        Allow inbound connections from the platform's outbound IP address in your database firewall. Databases on
+        private networks require a deployment inside your network or the private connector (contact support).
+      </p>
+    </mat-expansion-panel>
+  </mat-accordion>
+</div>

@@ -1,5 +1,6 @@
 using DatabaseAIAgent.Domain.Authorization;
 using DatabaseAIAgent.Domain.Billing;
+using DatabaseAIAgent.Domain.Databases;
 using DatabaseAIAgent.Domain.Organizations;
 using DatabaseAIAgent.Domain.Users;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -40,6 +41,8 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
     public DbSet<BillingAccount> BillingAccounts => Set<BillingAccount>();
+
+    public DbSet<DatabaseConnection> DatabaseConnections => Set<DatabaseConnection>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

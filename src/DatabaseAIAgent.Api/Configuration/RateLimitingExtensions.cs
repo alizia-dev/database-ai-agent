@@ -17,6 +17,7 @@ internal static class RateLimitingExtensions
                 PerIp(context, "global", security.RateLimitPermitsPerMinute));
             options.AddPolicy(RateLimitPolicies.Auth, context => PerIp(context, RateLimitPolicies.Auth, security.AuthRateLimitPermitsPerMinute));
             options.AddPolicy(RateLimitPolicies.Refresh, context => PerIp(context, RateLimitPolicies.Refresh, security.RefreshRateLimitPermitsPerMinute));
+            options.AddPolicy(RateLimitPolicies.ConnectionTest, context => PerIp(context, RateLimitPolicies.ConnectionTest, security.ConnectionTestRateLimitPermitsPerMinute));
         });
 
         return services;

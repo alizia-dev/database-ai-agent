@@ -14,7 +14,7 @@ try
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "database-ai-agent-workers"));
 
-    builder.Services.AddWorkerServices(builder.Configuration);
+    builder.Services.AddWorkerServices(builder.Configuration, builder.Environment);
 
     var host = builder.Build();
     await host.RunAsync();

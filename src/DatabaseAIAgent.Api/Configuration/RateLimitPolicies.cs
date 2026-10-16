@@ -7,4 +7,7 @@ internal static class RateLimitPolicies
 
     /// <summary>Token refresh (called automatically by the client, so allowed more often than <see cref="Auth"/>).</summary>
     public const string Refresh = "refresh";
+
+    /// <summary>Endpoints that open outbound connections to customer databases (limits probing of hosts and ports).</summary>
+    public const string ConnectionTest = "connection-test";
 }

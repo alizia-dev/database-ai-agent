@@ -4,6 +4,7 @@ using DatabaseAIAgent.Billing;
 using DatabaseAIAgent.Database;
 using DatabaseAIAgent.Infrastructure;
 using DatabaseAIAgent.Rag;
+using DatabaseAIAgent.Security;
 
 namespace DatabaseAIAgent.Workers;
 
@@ -13,14 +14,15 @@ namespace DatabaseAIAgent.Workers;
 /// </summary>
 public static class WorkerServices
 {
-    public static IServiceCollection AddWorkerServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddWorkerServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services
             .AddApplication(configuration)
             .AddInfrastructure(configuration)
+            .AddSecretProtection(configuration, environment)
             .AddBillingModule(configuration)
             .AddBillingWorkers()
-            .AddDatabaseModule()
+            .AddDatabaseModule(configuration)
             .AddRagModule();
 
         // Background jobs act as the system, never as a signed-in user.

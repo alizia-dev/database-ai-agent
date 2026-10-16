@@ -23,6 +23,7 @@ interface NavItem {
 /** Navigation grows as phases land; items appear only for users who hold the permission. */
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'space_dashboard', link: '/app/dashboard' },
+  { label: 'Databases', icon: 'storage', link: '/app/database', permission: 'database.view' },
   { label: 'Team', icon: 'group', link: '/app/team', permission: 'users.view' },
   { label: 'Billing', icon: 'credit_card', link: '/app/billing', permission: 'billing.view' },
   { label: 'Settings', icon: 'settings', link: '/app/settings' },

@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using DatabaseAIAgent.Application.Abstractions.Authorization;
+using DatabaseAIAgent.Application.Abstractions.Security;
 using DatabaseAIAgent.Security.Auth;
 using DatabaseAIAgent.Security.Authorization;
 using DatabaseAIAgent.Security.Email;
+using DatabaseAIAgent.Security.Encryption;
 using DatabaseAIAgent.Security.Sessions;
 using DatabaseAIAgent.Security.Tokens;
 using DatabaseAIAgent.Security.Users;
@@ -37,6 +39,8 @@ public static class SecurityModule
             .ValidateDataAnnotations()
             .Validate(o => o.SigningKeyBytes.Length >= JwtOptions.MinimumKeyBytes, $"Jwt:SigningKey must be at least {JwtOptions.MinimumKeyBytes} bytes (set JWT_SECRET).")
             .ValidateOnStart();
+
+        services.AddSecretProtection(configuration, environment);
 
         services.AddOptions<AuthOptions>().Bind(configuration.GetSection(AuthOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
 
@@ -82,6 +86,31 @@ public static class SecurityModule
         services.AddScoped<UserManagementService>();
         services.AddScoped<RoleService>();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Encryption of stored secrets (customer database credentials). Also used by the Workers host, which needs to
+    /// decrypt credentials but does not authenticate users.
+    /// </summary>
+    public static IServiceCollection AddSecretProtection(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        services.AddOptions<EncryptionOptions>()
+            .Bind(configuration.GetSection(EncryptionOptions.SectionName))
+            .PostConfigure<ILoggerFactory>((options, loggers) =>
+            {
+                if (string.IsNullOrEmpty(options.Key) && environment.IsDevelopment())
+                {
+                    options.Key = DevelopmentEncryptionKey.LoadOrCreate();
+                    loggers.CreateLogger(typeof(SecurityModule)).LogWarning("Encryption:Key is not configured; using the per-machine development key");
+                }
+            })
+            .Validate(o => EncryptionOptions.IsValidKey(o.Key), "Encryption:Key must be 32 random bytes, base64-encoded (set ENCRYPTION_KEY).")
+            .ValidateOnStart();
+        services.AddSingleton<ISecretProtector, AesGcmSecretProtector>();
         return services;
     }
 }

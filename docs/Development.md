@@ -47,6 +47,13 @@ In every other environment, apply migrations in the deployment pipeline (documen
 Development needs no JWT key (an ephemeral one is generated; you stay signed in across restarts because refresh
 tokens are stored in the database). Every other environment requires `Jwt__SigningKey` (`JWT_SECRET`).
 
+## Connecting a local database
+
+In Development, loopback and private addresses are allowed (`DatabaseConnections:AllowLoopback/AllowPrivateNetworks`
+in `appsettings.Development.json`), so you can connect to the compose demo SQL Server (`localhost,1433`) or any local
+database. Credentials are encrypted with a per-machine development key (created on first use in your user profile).
+Other environments must set `ENCRYPTION_KEY`.
+
 ## Build and test
 
 ```bash
@@ -57,6 +64,9 @@ cd client/database-ai-agent-web
 npx ng build
 npx ng test --watch=false
 ```
+
+Integration tests against real SQL Server, PostgreSQL and MySQL containers live in
+`tests/DatabaseAIAgent.IntegrationTests`. They need Docker and skip themselves when it is unavailable.
 
 Analyzer warnings are errors (`Directory.Build.props`). Package versions are managed centrally in `Directory.Packages.props`.
 

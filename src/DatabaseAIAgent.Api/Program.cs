@@ -51,7 +51,7 @@ try
         .AddInfrastructure(builder.Configuration)
         .AddSecurityModule(builder.Configuration, builder.Environment)
         .AddBillingModule(builder.Configuration)
-        .AddDatabaseModule()
+        .AddDatabaseModule(builder.Configuration)
         .AddToolsModule()
         .AddRagModule()
         .AddAgentModule();

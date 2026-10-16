@@ -435,6 +435,101 @@ namespace DatabaseAIAgent.Infrastructure.Persistence.Migrations
                     b.ToTable("webhook_events", "platform");
                 });
 
+            modelBuilder.Entity("DatabaseAIAgent.Domain.Databases.DatabaseConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DatabaseName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("EncryptedCredentials")
+                        .IsRequired()
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)");
+
+                    b.Property<string>("LastFailure")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset?>("LastTestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("ServerVersion")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("TlsMode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Permissions", "DatabaseAIAgent.Domain.Databases.DatabaseConnection.Permissions#PermissionSummary", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<bool>("CanReadTablesDirectly")
+                                .HasColumnType("boolean")
+                                .HasColumnName("PermCanReadTables");
+
+                            b1.Property<bool>("CanWriteData")
+                                .HasColumnType("boolean")
+                                .HasColumnName("PermCanWriteData");
+
+                            b1.Property<int>("ExecutableProcedureCount")
+                                .HasColumnType("integer")
+                                .HasColumnName("PermExecutableProcedures");
+
+                            b1.Property<bool>("IsAdministrator")
+                                .HasColumnType("boolean")
+                                .HasColumnName("PermIsAdministrator");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("database_connections", "platform");
+                });
+
             modelBuilder.Entity("DatabaseAIAgent.Domain.Organizations.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -874,6 +969,15 @@ namespace DatabaseAIAgent.Infrastructure.Persistence.Migrations
                     b.HasOne("DatabaseAIAgent.Domain.Billing.Plan", null)
                         .WithMany()
                         .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DatabaseAIAgent.Domain.Databases.DatabaseConnection", b =>
+                {
+                    b.HasOne("DatabaseAIAgent.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

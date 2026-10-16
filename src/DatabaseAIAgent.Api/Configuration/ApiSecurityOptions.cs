@@ -19,6 +19,10 @@ public sealed class ApiSecurityOptions
     [Range(1, 10_000)]
     public int RefreshRateLimitPermitsPerMinute { get; set; } = 30;
 
+    /// <summary>Per-IP limit for endpoints that open connections to customer databases.</summary>
+    [Range(1, 10_000)]
+    public int ConnectionTestRateLimitPermitsPerMinute { get; set; } = 10;
+
     /// <summary>Maximum request body in bytes. File uploads get their own, explicit limits.</summary>
     [Range(1_024, 100 * 1024 * 1024)]
     public long MaxRequestBodyBytes { get; set; } = 1 * 1024 * 1024;

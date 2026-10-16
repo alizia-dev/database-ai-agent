@@ -1,5 +1,7 @@
 using DatabaseAIAgent.Api.Contracts;
 using DatabaseAIAgent.Application.Workspace;
+using DatabaseAIAgent.Database.Connections;
+using DatabaseAIAgent.Domain.Databases;
 using DatabaseAIAgent.Domain.Users;
 using DatabaseAIAgent.Security.Auth;
 using DatabaseAIAgent.Security.Users;
@@ -137,5 +139,21 @@ internal sealed class UpdateWorkspaceSettingsValidator : AbstractValidator<Updat
         RuleFor(x => x.DateFormat).NotEmpty();
         RuleFor(x => x.ResponseStyle).IsInEnum();
         RuleFor(x => x.Retention).NotNull();
+    }
+}
+
+internal sealed class ConnectionInputValidator : AbstractValidator<ConnectionInput>
+{
+    public ConnectionInputValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().WithMessage("Enter a name for this connection.").MaximumLength(DatabaseConnection.NameMaxLength);
+        RuleFor(x => x.Provider).IsInEnum();
+        RuleFor(x => x.TlsMode).IsInEnum().When(x => x.TlsMode is not null);
+        RuleFor(x => x.Host).MaximumLength(DatabaseConnection.HostMaxLength);
+        RuleFor(x => x.Port).InclusiveBetween(1, 65535).When(x => x.Port is not null);
+        RuleFor(x => x.Database).MaximumLength(DatabaseConnection.DatabaseNameMaxLength);
+        RuleFor(x => x.Username).MaximumLength(128);
+        RuleFor(x => x.Password).MaximumLength(256);
+        RuleFor(x => x.ConnectionString).MaximumLength(2048);
     }
 }

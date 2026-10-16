@@ -89,6 +89,23 @@ Rule violations return 403 (`users.owner_protected`, `users.cannot_manage_self`,
 
 Endpoints gated by plan features return 403 with `code: "billing.upgrade_required"`.
 
+## Databases: `/api/database`
+
+| Method | Path | Permission | Notes |
+|---|---|---|---|
+| GET | `/providers` | `database.view` | → `[{ kind, displayName, defaultPort, leastPrivilegeSetupScript }]` |
+| GET | `/connections` | `database.view` | → `[connection]`. Credentials are never included. |
+| GET | `/connections/{id}` | `database.view` | |
+| POST | `/connections/test` | `database.manage` + plan `production_access` | Body: connection input. → `{ succeeded, failure, message, serverVersion, permissions, warnings[], ignoredOptions[], durationMs }`. Nothing is stored. Rate limited. |
+| POST | `/connections` | `database.manage` + `production_access` | Tests first. → 201 `{ connection, test }`; 400 `database.connection_failed` / `database.invalid_connection`; 409 `database.name_taken`; 403 `billing.limit_reached` |
+| PUT | `/connections/{id}` | `database.manage` + `production_access` | Omit `password` to keep the stored credentials; re-tests before saving. |
+| POST | `/connections/{id}/test` | `database.manage` + `production_access` | Re-tests with stored credentials and records the status. |
+| DELETE | `/connections/{id}` | `database.manage` | Removes platform metadata and credentials only. |
+
+Connection input: `{ name, provider: "SqlServer"|"PostgreSql"|"MySql", host, port, database, username, password, tlsMode: "VerifyFull"|"Required"|"Preferred"|"Disabled", connectionString }`.
+Use either the fields or `connectionString`. Failures are categories: `HostNotAllowed`, `HostUnreachable`,
+`AuthenticationFailed`, `DatabaseNotFound`, `Timeout`, `TlsFailure`, `PermissionDenied`, `Unknown`.
+
 ## System (public)
 
 `GET /api/system/info` → `{ name, version, environment }`; `GET /health/live`; `GET /health/ready`.

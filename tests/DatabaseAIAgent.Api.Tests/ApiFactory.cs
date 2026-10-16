@@ -35,6 +35,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public Billing.FakeStripeApi Stripe { get; } = new();
 
+    public Databases.FakePostgresProvider Postgres { get; } = new();
+
     private string ConnectionString => $"Data Source={_databasePath};Default Timeout=30";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -45,6 +47,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // Every test request comes from the same in-memory client address, so limits are raised for the shared host.
         builder.UseSetting("ApiSecurity:AuthRateLimitPermitsPerMinute", "10000");
         builder.UseSetting("ApiSecurity:RefreshRateLimitPermitsPerMinute", "10000");
+        builder.UseSetting("ApiSecurity:ConnectionTestRateLimitPermitsPerMinute", "10000");
         builder.UseSetting("ApiSecurity:RateLimitPermitsPerMinute", "100000");
         builder.UseSetting("App:PublicUrl", PublicAppUrl);
         builder.UseSetting("Jwt:SigningKey", "test-signing-key-that-is-long-enough-0123456789");
@@ -57,6 +60,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Billing:Plans:2:StripeMonthlyPriceId", "price_pro_monthly");
         builder.UseSetting("Billing:Plans:2:StripeAnnualPriceId", "price_pro_annual");
         builder.UseSetting("Billing:Plans:3:StripeMonthlyPriceId", "price_business_monthly");
+        builder.UseSetting("Encryption:Key", Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
 
         builder.ConfigureTestServices(services =>
         {
@@ -72,6 +76,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.RemoveAll<Stripe.IStripeClient>();
             services.AddSingleton<Stripe.IStripeClient>(_ => Billing.FakeStripeApi.CreateClient(Stripe));
             services.AddControllers().AddApplicationPart(typeof(ApiFactory).Assembly);
+
+            services.RemoveAll<DatabaseAIAgent.Application.Abstractions.Billing.IEntitlementService>();
+            services.AddScoped<DatabaseAIAgent.Billing.Subscriptions.EntitlementService>();
+            services.AddScoped<DatabaseAIAgent.Application.Abstractions.Billing.IEntitlementService, Databases.TestEntitlements>();
+
+            var realPostgres = services.Single(d => d.ServiceType == typeof(DatabaseAIAgent.Application.Abstractions.Databases.ICustomerDatabaseProvider)
+                && d.ImplementationType == typeof(DatabaseAIAgent.Database.Providers.PostgresDatabaseProvider));
+            services.Remove(realPostgres);
+            services.AddSingleton<DatabaseAIAgent.Application.Abstractions.Databases.ICustomerDatabaseProvider>(Postgres);
         });
     }
 

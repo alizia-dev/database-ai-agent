@@ -113,6 +113,10 @@ export class BillingService {
     return firstValueFrom(this.http.get<PlanCatalog>('/api/billing/plans'));
   }
 
+  entitlements(): Promise<Entitlements> {
+    return firstValueFrom(this.http.get<Entitlements>('/api/billing/entitlements'));
+  }
+
   overview(): Promise<SubscriptionOverview> {
     return firstValueFrom(this.http.get<SubscriptionOverview>('/api/billing/subscription'));
   }

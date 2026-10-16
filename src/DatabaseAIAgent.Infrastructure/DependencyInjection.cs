@@ -74,6 +74,7 @@ public static class DependencyInjection
         services.AddScoped<IBillingHistoryRepository, BillingHistoryRepository>();
         services.AddScoped<IBillingAccountRepository, BillingAccountRepository>();
         services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
+        services.AddScoped<IDatabaseConnectionRepository, DatabaseConnectionRepository>();
     }
 
     /// <summary>
