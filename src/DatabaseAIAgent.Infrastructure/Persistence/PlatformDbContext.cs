@@ -1,10 +1,12 @@
 using DatabaseAIAgent.Domain.Authorization;
+using DatabaseAIAgent.Domain.Billing;
 using DatabaseAIAgent.Domain.Organizations;
 using DatabaseAIAgent.Domain.Users;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DatabaseAIAgent.Infrastructure.Persistence;
 
@@ -27,6 +29,18 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
+    public DbSet<Plan> Plans => Set<Plan>();
+
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+
+    public DbSet<Payment> Payments => Set<Payment>();
+
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
+
+    public DbSet<BillingAccount> BillingAccounts => Set<BillingAccount>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -43,5 +57,18 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         builder.Entity<DataProtectionKey>().ToTable("data_protection_keys");
 
         builder.ApplyConfigurationsFromAssembly(typeof(PlatformDbContext).Assembly);
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        ArgumentNullException.ThrowIfNull(configurationBuilder);
+
+        // SQLite (used only by the automated tests) cannot sort or compare DateTimeOffset values; store them as
+        // UTC ticks there. PostgreSQL keeps native "timestamp with time zone" columns.
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            configurationBuilder.Properties<DateTimeOffset>().HaveConversion<DateTimeOffsetToBinaryConverter>();
+            configurationBuilder.Properties<DateTimeOffset?>().HaveConversion<DateTimeOffsetToBinaryConverter>();
+        }
     }
 }

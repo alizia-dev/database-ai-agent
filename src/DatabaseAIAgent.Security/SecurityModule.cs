@@ -39,12 +39,6 @@ public static class SecurityModule
             .ValidateOnStart();
 
         services.AddOptions<AuthOptions>().Bind(configuration.GetSection(AuthOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
-        services.AddOptions<AppUrlOptions>()
-            .Bind(configuration.GetSection(AppUrlOptions.SectionName))
-            .ValidateDataAnnotations()
-            .Validate(o => Uri.TryCreate(o.PublicUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.IsLoopback),
-                "App:PublicUrl must be an absolute https URL (http is allowed for localhost only).")
-            .ValidateOnStart();
 
         var auth = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
         services.Configure<IdentityOptions>(identity =>

@@ -50,11 +50,3 @@ public sealed class AuthOptions
     public int EmailVerificationTokenDays { get; set; } = 2;
 }
 
-public sealed class AppUrlOptions
-{
-    public const string SectionName = "App";
-
-    /// <summary>Public URL of the web app, used to build links in emails (e.g. https://app.example.com).</summary>
-    [Required, Url]
-    public string PublicUrl { get; set; } = string.Empty;
-}

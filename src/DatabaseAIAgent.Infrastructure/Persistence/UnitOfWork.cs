@@ -7,6 +7,8 @@ internal sealed class UnitOfWork(PlatformDbContext db) : IUnitOfWork
 {
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 
+    public void DiscardChanges() => db.ChangeTracker.Clear();
+
     public Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation,
         Func<TResult, bool> shouldCommit,

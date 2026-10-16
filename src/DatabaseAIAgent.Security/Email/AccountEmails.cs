@@ -1,5 +1,6 @@
 using System.Net;
 using DatabaseAIAgent.Application.Abstractions.Email;
+using DatabaseAIAgent.Application.Common;
 using Microsoft.Extensions.Options;
 
 namespace DatabaseAIAgent.Security.Email;

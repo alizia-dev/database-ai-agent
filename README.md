@@ -29,7 +29,8 @@ See [docs/Development.md](docs/Development.md) for the local inner loop, tests a
 - [Development](docs/Development.md)
 - [Security](docs/Security.md)
 - [API](docs/API.md)
+- [Billing](docs/Billing.md) · [Stripe](docs/Stripe.md) · [PayPal](docs/PayPal.md)
 - Product specification: [docs/claude-code-prompt.md](docs/claude-code-prompt.md)
 
-The remaining guides (Deployment, connectors, AI providers, RAG, tool calling, billing, onboarding)
+The remaining guides (Deployment, connectors, AI providers, RAG, tool calling, onboarding)
 are written in the phase that implements each area.

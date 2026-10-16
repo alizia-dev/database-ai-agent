@@ -1,3 +1,4 @@
+using DatabaseAIAgent.Application.Common;
 using DatabaseAIAgent.Domain.Authorization;
 using DatabaseAIAgent.Domain.Common;
 using DatabaseAIAgent.Domain.Users;

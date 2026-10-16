@@ -69,6 +69,11 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserInvitationRepository, UserInvitationRepository>();
         services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
+        services.AddScoped<IPlanRepository, PlanRepository>();
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IBillingHistoryRepository, BillingHistoryRepository>();
+        services.AddScoped<IBillingAccountRepository, BillingAccountRepository>();
+        services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
     }
 
     /// <summary>

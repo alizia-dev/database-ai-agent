@@ -71,6 +71,24 @@ Rule violations return 403 (`users.owner_protected`, `users.cannot_manage_self`,
 | GET | signed in | → `{ name, industry, assistantName, businessDescription, timeZone, currency, dateFormat, responseStyle, retention, updatedAt }` |
 | PUT | `settings.manage` | same fields except `updatedAt`; 400 `workspace.invalid_settings` |
 
+## Billing: `/api/billing`
+
+| Method | Path | Permission | Body / notes |
+|---|---|---|---|
+| GET | `/plans` | public | → `{ plans[], trialDays, trialRequiresPaymentMethod, salesContactEmail }`. Provider price IDs are never exposed. |
+| GET | `/entitlements` | signed in | → `{ planCode, planName, isFreePlan, subscriptionStatus, hasProductionAccess, limits, features[], trialEndsAt, currentPeriodEnd, cancelAtPeriodEnd, paymentPastDue }` |
+| GET | `/subscription` | `billing.view` | → `{ entitlements, plan, subscription, checkoutPending, canManagePaymentMethods }` |
+| GET | `/history` | `billing.view` | → `{ invoices[], payments[] }` |
+| POST | `/checkout` | `billing.manage` | `{ planCode, interval: "Monthly"\|"Annual", provider: "Stripe"\|"PayPal" }` → `{ url }` (provider-hosted). 409 `billing.already_subscribed`, 400 `billing.plan_not_purchasable` / `billing.provider_unavailable` / `billing.plan_not_configured`, 503 `billing.provider_error` |
+| POST | `/portal` | `billing.manage` | → `{ url }` |
+| POST | `/change-plan` | `billing.manage` | `{ planCode, interval }` → `{ status: "processing"\|"approval_required", approvalUrl }` |
+| POST | `/cancel` | `billing.manage` | `{ atPeriodEnd }` → 204 |
+| POST | `/resume` | `billing.manage` | → 204 (Stripe, scheduled cancellations only) |
+| PUT | `/plans/{code}` | `billing.manage` + `Billing:AllowPlanEditing` | Operator-only plan editing; 403 `billing.plan_editing_disabled` by default |
+| POST | `/webhooks/stripe`, `/webhooks/paypal` | provider signature | 200 processed/ignored/duplicate, 400 invalid signature, 404 provider disabled, 500 failed (provider retries) |
+
+Endpoints gated by plan features return 403 with `code: "billing.upgrade_required"`.
+
 ## System (public)
 
 `GET /api/system/info` → `{ name, version, environment }`; `GET /health/live`; `GET /health/ready`.

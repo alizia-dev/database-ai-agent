@@ -1,0 +1,75 @@
+.section {
+  margin: 16px 0 32px;
+}
+
+.processing {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.danger {
+  --mat-button-filled-container-color: var(--mat-sys-error);
+  --mat-button-filled-label-text-color: var(--mat-sys-on-error);
+}
+
+.section-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+h2 {
+  font: var(--mat-sys-title-large);
+  margin: 24px 0 12px;
+}
+
+.subheading {
+  font: var(--mat-sys-title-small);
+  margin: 24px 0 8px;
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.history {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+}
+
+.history th,
+.history td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+.history a {
+  margin-right: 12px;
+}

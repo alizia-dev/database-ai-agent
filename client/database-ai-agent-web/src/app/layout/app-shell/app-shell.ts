@@ -24,6 +24,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'space_dashboard', link: '/app/dashboard' },
   { label: 'Team', icon: 'group', link: '/app/team', permission: 'users.view' },
+  { label: 'Billing', icon: 'credit_card', link: '/app/billing', permission: 'billing.view' },
   { label: 'Settings', icon: 'settings', link: '/app/settings' },
 ];
 

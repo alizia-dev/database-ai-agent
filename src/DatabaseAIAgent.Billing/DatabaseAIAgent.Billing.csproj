@@ -5,4 +5,16 @@
     <ProjectReference Include="..\DatabaseAIAgent.Domain\DatabaseAIAgent.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Stripe.net" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DatabaseAIAgent.UnitTests" />
+    <InternalsVisibleTo Include="DatabaseAIAgent.Api.Tests" />
+  </ItemGroup>
+
 </Project>

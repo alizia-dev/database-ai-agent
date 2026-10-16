@@ -1,8 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
 
 /** Public landing page. Phase 1 provides the hero; remaining sections are built with the public site. */
 @Component({
   selector: 'app-landing-page',
+  imports: [RouterLink, MatButtonModule],
   template: `
     <section class="hero">
       <h1>Talk to Your Business Database with AI</h1>
@@ -10,6 +13,10 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
         Connect your existing database, approve exactly which stored procedures the assistant may use, and ask
         questions in plain language. Your business data stays in your database.
       </p>
+      <div class="cta">
+        <a mat-flat-button routerLink="/register">Start free</a>
+        <a mat-stroked-button routerLink="/pricing">See pricing</a>
+      </div>
     </section>
   `,
   styles: `
@@ -26,6 +33,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
       font: var(--mat-sys-body-large);
       color: var(--mat-sys-on-surface-variant);
       margin: 0;
+    }
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

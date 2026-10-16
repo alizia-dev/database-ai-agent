@@ -48,6 +48,21 @@ Customer data is not stored as a copy of the source database.
 - **Single-tenant registration**: the first account to register becomes the Owner. After that, registration is by
   invitation only, unless `Auth:AllowPublicRegistration` is true (new users join as Viewer).
 
+## Billing (Phase 3)
+
+- No card data is ever handled. Checkout, payment-method updates and invoices live on Stripe- or PayPal-hosted
+  pages. The SPA redirects only to known provider hosts.
+- Subscriptions are activated only by **verified webhooks**: Stripe HMAC signatures with replay tolerance, PayPal
+  signature verification through its API. Redirect URLs are built server-side from `App:PublicUrl`.
+- Webhooks are idempotent: there is a unique (provider, event ID) index, and failed events are rolled back and retried.
+- Events are scoped to this deployment by `Billing:AccountReference` (provider metadata / PayPal `custom_id`), or by an
+  already-known customer or subscription.
+- Plan-based access is enforced server-side (`IEntitlementService`, `[RequireFeature]`). Plan editing through the API
+  is off by default, so customers cannot raise their own limits.
+- Provider secrets come from configuration or a secret manager and are never returned by any API. Provider error
+  details are logged with error codes, not shown to users.
+- Invoice links from providers are stored only if they are `https`.
+
 ## HTTP hardening (Phase 1)
 
 Security headers (nosniff, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a restrictive CSP for JSON

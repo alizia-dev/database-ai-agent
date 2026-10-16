@@ -1,3 +1,4 @@
+using DatabaseAIAgent.Application.Abstractions.Persistence;
 using DatabaseAIAgent.Domain.Authorization;
 using DatabaseAIAgent.Domain.Organizations;
 using DatabaseAIAgent.Domain.Users;
@@ -29,6 +30,11 @@ public static class PlatformDatabaseInitializer
 
         await SeedOrganizationAsync(db, logger, cancellationToken);
         await SeedRolesAsync(db, logger, cancellationToken);
+
+        foreach (var seeder in scope.ServiceProvider.GetServices<IDataSeeder>().OrderBy(s => s.Order))
+        {
+            await seeder.SeedAsync(cancellationToken);
+        }
     }
 
     internal static async Task SeedOrganizationAsync(PlatformDbContext db, ILogger logger, CancellationToken cancellationToken)

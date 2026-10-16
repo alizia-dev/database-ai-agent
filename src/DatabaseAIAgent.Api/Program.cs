@@ -47,10 +47,10 @@ try
     });
 
     builder.Services
-        .AddApplication()
+        .AddApplication(builder.Configuration)
         .AddInfrastructure(builder.Configuration)
         .AddSecurityModule(builder.Configuration, builder.Environment)
-        .AddBillingModule()
+        .AddBillingModule(builder.Configuration)
         .AddDatabaseModule()
         .AddToolsModule()
         .AddRagModule()

@@ -21,6 +21,7 @@
     <!-- Keep aligned with the version JwtBearer depends on; mixed Microsoft.IdentityModel.* versions break token validation. -->
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.19.2" />
     <PackageVersion Include="MailKit" Version="4.18.1" />
+    <PackageVersion Include="Stripe.net" Version="52.4.2" />
   </ItemGroup>
   <ItemGroup Label="Data">
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />

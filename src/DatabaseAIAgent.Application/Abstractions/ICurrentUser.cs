@@ -10,6 +10,8 @@ public interface ICurrentUser
 
     bool IsAuthenticated { get; }
 
+    string? Email { get; }
+
     string? IpAddress { get; }
 
     string? UserAgent { get; }

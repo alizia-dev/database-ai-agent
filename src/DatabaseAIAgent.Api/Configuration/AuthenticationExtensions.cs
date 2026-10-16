@@ -24,6 +24,8 @@ internal static class AuthenticationExtensions
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+        services.AddScoped<IAuthorizationHandler, FeatureHandler>();
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, PlanAwareAuthorizationResultHandler>();
 
         return services;
     }

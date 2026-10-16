@@ -69,6 +69,15 @@ services:
       Email__SmtpPort: "1025"
       Email__SmtpUseTls: "false"
       Email__FromAddress: no-reply@database-ai-agent.local
+      Billing__AccountReference: ${BILLING_ACCOUNT_REFERENCE:-local-compose}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
+      Billing__Plans__2__StripeMonthlyPriceId: ${STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID:-}
+      Billing__Plans__2__StripeAnnualPriceId: ${STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID:-}
+      PayPal__Mode: ${PAYPAL_MODE:-Sandbox}
+      PayPal__ClientId: ${PAYPAL_CLIENT_ID:-}
+      PayPal__ClientSecret: ${PAYPAL_CLIENT_SECRET:-}
+      PayPal__WebhookId: ${PAYPAL_WEBHOOK_ID:-}
     ports:
       - "5080:8080"
     depends_on:
@@ -92,6 +101,14 @@ services:
       Email__SmtpPort: "1025"
       Email__SmtpUseTls: "false"
       Email__FromAddress: no-reply@database-ai-agent.local
+      App__PublicUrl: http://localhost:8081
+      Billing__AccountReference: ${BILLING_ACCOUNT_REFERENCE:-local-compose}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
+      PayPal__Mode: ${PAYPAL_MODE:-Sandbox}
+      PayPal__ClientId: ${PAYPAL_CLIENT_ID:-}
+      PayPal__ClientSecret: ${PAYPAL_CLIENT_SECRET:-}
+      PayPal__WebhookId: ${PAYPAL_WEBHOOK_ID:-}
     depends_on:
       api:
         condition: service_started

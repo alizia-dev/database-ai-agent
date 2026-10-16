@@ -1,0 +1,187 @@
+<h1 class="page-title">Billing</h1>
+<p class="muted">Your subscription, payment method and invoices.</p>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (error()) {
+  <p class="notice error" role="alert">{{ error() }}</p>
+}
+
+@if (processing()) {
+  <div class="notice processing" role="status">
+    <mat-progress-bar mode="indeterminate" />
+    <strong>Payment processing…</strong> We are waiting for the payment provider to confirm. This usually takes a few seconds.
+  </div>
+}
+@if (processingTimedOut()) {
+  <p class="notice" role="status">
+    Confirmation is taking longer than usual. You will not be charged twice; refresh this page in a minute, or contact
+    support if your plan has not updated.
+  </p>
+}
+
+@if (overview(); as o) {
+  @if (o.entitlements.paymentPastDue) {
+    <p class="notice error" role="alert">
+      Your last payment failed. Update your payment method to avoid losing access.
+      @if (canManage() && o.canManagePaymentMethods) {
+        <button mat-button type="button" (click)="openPortal()">Update payment method</button>
+      }
+    </p>
+  }
+
+  <mat-card appearance="outlined" class="section">
+    <mat-card-header>
+      <mat-card-title>{{ o.entitlements.planName }}</mat-card-title>
+      <mat-card-subtitle>{{ statusLabel() }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <dl class="facts">
+        @if (subscription(); as s) {
+          <dt>Billing</dt>
+          <dd>{{ s.interval === 'Annual' ? 'Yearly' : 'Monthly' }} via {{ s.provider === 'Stripe' ? 'card (Stripe)' : s.provider }}</dd>
+          @if (s.status === 'Trialing' && s.trialEnd) {
+            <dt>Trial ends</dt>
+            <dd>{{ s.trialEnd | date: 'mediumDate' }}</dd>
+          }
+          @if (s.currentPeriodEnd && s.status !== 'Canceled') {
+            <dt>{{ s.cancelAtPeriodEnd ? 'Access ends' : 'Next billing date' }}</dt>
+            <dd>{{ s.currentPeriodEnd | date: 'mediumDate' }}</dd>
+          }
+        }
+        <dt>Database connections</dt>
+        <dd>{{ o.entitlements.limits.maxDatabaseConnections ?? 'Unlimited' }}</dd>
+        <dt>Users</dt>
+        <dd>{{ o.entitlements.limits.maxUsers ?? 'Unlimited' }}</dd>
+        <dt>Tool executions / month</dt>
+        <dd>{{ o.entitlements.limits.maxToolExecutionsPerMonth ?? 'Unlimited' }}</dd>
+      </dl>
+      @if (!o.entitlements.hasProductionAccess) {
+        <p class="muted">
+          You are using the demo.
+          {{ canManage() ? 'Choose a plan below to connect your own database.' : 'Ask a workspace owner to choose a plan to connect your own database.' }}
+        </p>
+      }
+      @if (subscription()?.cancelAtPeriodEnd) {
+        <p class="notice" role="status">Your subscription is set to cancel at the end of the billing period.</p>
+      }
+    </mat-card-content>
+    @if (canManage()) {
+      <mat-card-actions class="card-actions">
+        @if (o.canManagePaymentMethods) {
+          <button mat-stroked-button type="button" (click)="openPortal()" [disabled]="busy() === 'portal'">Manage payment method &amp; invoices</button>
+        }
+        @if (subscription()?.canResume) {
+          <button mat-stroked-button type="button" (click)="resume()" [disabled]="busy() === 'resume'">Keep my subscription</button>
+        } @else if (hasLiveSubscription() && !subscription()?.cancelAtPeriodEnd) {
+          @if (confirmingCancel()) {
+            <span class="confirm">
+              Cancel at the end of the billing period?
+              <button mat-flat-button type="button" class="danger" (click)="cancel()" [disabled]="busy() === 'cancel'">Yes, cancel</button>
+              <button mat-button type="button" (click)="confirmingCancel.set(false)">Keep subscription</button>
+            </span>
+          } @else {
+            <button mat-button type="button" (click)="confirmingCancel.set(true)">Cancel subscription</button>
+          }
+        }
+      </mat-card-actions>
+    }
+  </mat-card>
+
+  @if (canManage()) {
+    <div class="section-header">
+      <h2>{{ hasLiveSubscription() ? 'Change plan' : 'Choose a plan' }}</h2>
+      <mat-button-toggle-group [value]="interval()" (change)="interval.set($event.value)" aria-label="Billing period">
+        <mat-button-toggle value="Monthly">Monthly</mat-button-toggle>
+        <mat-button-toggle value="Annual">Yearly</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    <div class="plans">
+      @for (plan of purchasablePlans(); track plan.code) {
+        <app-plan-card [plan]="plan" [interval]="interval()" [current]="planAction(plan) === 'current'">
+          @switch (planAction(plan)) {
+            @case ('current') {
+              <button mat-stroked-button type="button" disabled>Your current plan</button>
+            }
+            @case ('checkout') {
+              @for (provider of plan.checkoutProviders; track provider) {
+                <button mat-flat-button type="button" (click)="checkout(plan, provider)" [disabled]="busy() !== null || processing()">
+                  {{ providerLabel(provider) }}
+                </button>
+              }
+            }
+            @case ('change') {
+              <button mat-flat-button type="button" (click)="changePlan(plan)" [disabled]="busy() !== null || processing()">Switch to {{ plan.name }}</button>
+            }
+            @case ('contact') {
+              <span class="muted small">Contact sales for Enterprise pricing.</span>
+            }
+            @default {
+              <span class="muted small">Not available for online purchase yet.</span>
+            }
+          }
+        </app-plan-card>
+      }
+    </div>
+  }
+
+  <h2>Billing history</h2>
+  @if (history(); as h) {
+    @if (h.invoices.length === 0 && h.payments.length === 0) {
+      <p class="muted">No invoices yet.</p>
+    }
+    @if (h.invoices.length > 0) {
+      <div class="table-scroll">
+        <table class="history">
+          <thead>
+            <tr><th scope="col">Date</th><th scope="col">Invoice</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col"><span class="cdk-visually-hidden">Links</span></th></tr>
+          </thead>
+          <tbody>
+            @for (invoice of h.invoices; track $index) {
+              <tr>
+                <td>{{ invoice.issuedAt | date: 'mediumDate' }}</td>
+                <td>{{ invoice.number ?? '—' }}</td>
+                <td>{{ invoice.amountDue | currency: invoice.currency }}</td>
+                <td>{{ invoice.status }}</td>
+                <td>
+                  @if (invoice.hostedInvoiceUrl) {
+                    <a [href]="invoice.hostedInvoiceUrl" target="_blank" rel="noopener noreferrer">View</a>
+                  }
+                  @if (invoice.pdfUrl) {
+                    <a [href]="invoice.pdfUrl" target="_blank" rel="noopener noreferrer">PDF</a>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (h.payments.length > 0) {
+      <h3 class="subheading">Payments</h3>
+      <div class="table-scroll">
+        <table class="history">
+          <thead>
+            <tr><th scope="col">Date</th><th scope="col">Method</th><th scope="col">Amount</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            @for (payment of h.payments; track $index) {
+              <tr>
+                <td>{{ payment.occurredAt | date: 'mediumDate' }}</td>
+                <td>{{ payment.provider === 'Stripe' ? 'Card' : payment.provider }}</td>
+                <td>{{ payment.amount | currency: payment.currency }}</td>
+                <td>
+                  {{ payment.status }}
+                  @if (payment.failureMessage) {
+                    <span class="muted small">— {{ payment.failureMessage }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+}

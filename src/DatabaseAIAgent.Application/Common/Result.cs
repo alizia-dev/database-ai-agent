@@ -10,6 +10,9 @@ public enum ErrorType
     NotFound = 3,
     Conflict = 4,
     TooManyRequests = 5,
+
+    /// <summary>A required external service (e.g. a payment gateway) is unavailable or failed.</summary>
+    Unavailable = 6,
 }
 
 /// <summary>
@@ -28,6 +31,8 @@ public sealed record Error(string Code, string Message, ErrorType Type, IReadOnl
     public static Error NotFound(string code, string message) => new(code, message, ErrorType.NotFound);
 
     public static Error Conflict(string code, string message) => new(code, message, ErrorType.Conflict);
+
+    public static Error Unavailable(string code, string message) => new(code, message, ErrorType.Unavailable);
 }
 
 public class Result

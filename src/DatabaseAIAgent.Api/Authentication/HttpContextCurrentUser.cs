@@ -22,6 +22,8 @@ internal sealed class HttpContextCurrentUser(IHttpContextAccessor accessor) : IC
 
     public bool IsAuthenticated => UserId is not null;
 
+    public string? Email => IsAuthenticated ? accessor.HttpContext?.User.FindFirst(AuthClaimTypes.Email)?.Value : null;
+
     public string? IpAddress => accessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
 
     public string? UserAgent => accessor.HttpContext?.Request.Headers.UserAgent.ToString();

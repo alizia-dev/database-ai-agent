@@ -21,6 +21,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/app/team-page').then((m) => m.TeamPage),
       },
       {
+        path: 'billing',
+        title: 'Billing — Database AI Agent',
+        canActivate: [permissionGuard('billing.view')],
+        loadComponent: () => import('./features/app/billing-page').then((m) => m.BillingPage),
+      },
+      {
         path: 'settings',
         title: 'Settings — Database AI Agent',
         loadComponent: () => import('./features/app/settings-page').then((m) => m.SettingsPage),
@@ -36,6 +42,11 @@ export const routes: Routes = [
         pathMatch: 'full',
         title: 'Database AI Agent — Talk to your business database',
         loadComponent: () => import('./features/landing/landing-page').then((m) => m.LandingPage),
+      },
+      {
+        path: 'pricing',
+        title: 'Pricing — Database AI Agent',
+        loadComponent: () => import('./features/pricing/pricing-page').then((m) => m.PricingPage),
       },
       {
         path: 'login',

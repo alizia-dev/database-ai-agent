@@ -33,6 +33,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public CapturingEmailSender Emails { get; } = new();
 
+    public Billing.FakeStripeApi Stripe { get; } = new();
+
     private string ConnectionString => $"Data Source={_databasePath};Default Timeout=30";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -48,6 +50,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Jwt:SigningKey", "test-signing-key-that-is-long-enough-0123456789");
         builder.UseSetting("Email:Transport", "PickupDirectory");
         builder.UseSetting("Email:FromAddress", "no-reply@example.test");
+        builder.UseSetting("Billing:AccountReference", Billing.StripeWebhooks.AccountReference);
+        builder.UseSetting("Stripe:SecretKey", "sk_test_fake");
+        builder.UseSetting("Stripe:WebhookSecret", Billing.StripeWebhooks.Secret);
+        // Plan order in appsettings.json: free, starter, professional, business, enterprise.
+        builder.UseSetting("Billing:Plans:2:StripeMonthlyPriceId", "price_pro_monthly");
+        builder.UseSetting("Billing:Plans:2:StripeAnnualPriceId", "price_pro_annual");
+        builder.UseSetting("Billing:Plans:3:StripeMonthlyPriceId", "price_business_monthly");
 
         builder.ConfigureTestServices(services =>
         {
@@ -59,6 +68,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddSingleton<IEmailSender>(Emails);
 
             services.AddSingleton<IStartupFilter, ThrowingEndpointStartupFilter>();
+
+            services.RemoveAll<Stripe.IStripeClient>();
+            services.AddSingleton<Stripe.IStripeClient>(_ => Billing.FakeStripeApi.CreateClient(Stripe));
+            services.AddControllers().AddApplicationPart(typeof(ApiFactory).Assembly);
         });
     }
 

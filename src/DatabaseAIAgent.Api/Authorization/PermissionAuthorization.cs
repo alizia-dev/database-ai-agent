@@ -19,11 +19,25 @@ internal static class PermissionPolicy
     public const string Prefix = "permission:";
 }
 
-/// <summary>Builds <c>permission:*</c> policies on demand, so no policy has to be registered per permission.</summary>
+/// <summary>Builds <c>permission:*</c> and <c>feature:*</c> policies on demand, so none has to be registered individually.</summary>
 internal sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> options) : DefaultAuthorizationPolicyProvider(options)
 {
     public override async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
+        if (policyName.StartsWith(FeaturePolicy.Prefix, StringComparison.Ordinal))
+        {
+            var feature = policyName[FeaturePolicy.Prefix.Length..];
+            if (!Domain.Billing.PlanFeatures.IsKnown(feature))
+            {
+                throw new InvalidOperationException($"Unknown plan feature '{feature}' used in an authorization attribute.");
+            }
+
+            return new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .AddRequirements(new FeatureRequirement(feature))
+                .Build();
+        }
+
         if (!policyName.StartsWith(PermissionPolicy.Prefix, StringComparison.Ordinal))
         {
             return await base.GetPolicyAsync(policyName);
