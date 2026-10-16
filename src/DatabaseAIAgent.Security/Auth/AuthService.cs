@@ -173,9 +173,9 @@ public sealed class AuthService(
             return EmailNotVerified;
         }
 
-        // Also resets the failed-attempt counter (only on a fully successful sign-in).
-        user.LastLoginAt = clock.UtcNow;
-        await activity.RecordSignInAsync(user.Id, user.LastLoginAt.Value, cancellationToken);
+        // Single-row update that also resets the failed-attempt counter. The tracked user entity is deliberately not
+        // modified: saving it would go through Identity's concurrency stamp and conflict with parallel sign-ins.
+        await activity.RecordSignInAsync(user.Id, clock.UtcNow, cancellationToken);
         logger.LogInformation("User {UserId} signed in", user.Id);
         return await CreateSessionAsync(user, familyId: null, cancellationToken);
     }

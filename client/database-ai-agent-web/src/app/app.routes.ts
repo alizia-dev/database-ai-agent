@@ -21,6 +21,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/app/database-page').then((m) => m.DatabasePage),
       },
       {
+        path: 'database/schema',
+        title: 'Schema — Database AI Agent',
+        canActivate: [permissionGuard('database.view')],
+        loadComponent: () => import('./features/app/schema-page').then((m) => m.SchemaPage),
+      },
+      {
         path: 'database/connect',
         title: 'Connect a database — Database AI Agent',
         canActivate: [permissionGuard('database.manage')],

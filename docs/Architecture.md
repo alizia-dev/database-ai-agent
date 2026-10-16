@@ -92,9 +92,19 @@ Angular ─► API ─► Auth ─► Subscription/Entitlement ─► Permission
 
 Transactional customer data is never copied into the platform database; only metadata and knowledge are stored.
 
-## Long-running work
+## Long-running work and background jobs
 
-Never inside an HTTP request: API ─► job queue (abstraction) ─► Workers.
+Never inside an HTTP request: API ─► `IJobQueue` ─► Workers (`IJobHandler` per job type).
+
+- The default queue stores jobs in `platform.background_jobs`. `Enqueue` adds the job to the caller's unit of work, so
+  the job and the change that requested it (e.g. a `SchemaAnalysis` row) commit together: no lost or orphaned jobs.
+- Workers claim a job with a conditional update (`Queued → Running` only if still queued), so each job runs once
+  even with several workers. A claim lasts for the handler's `LockDuration`; expired claims (a crashed worker) are
+  returned to the queue. Failures retry with exponential backoff up to `MaxAttempts`.
+- `Jobs:ProcessInApi=true` (Development default) runs the processor inside the API, so local development works
+  without a separate worker. In docker-compose and production, the Workers host processes jobs.
+- The interface allows replacing the store with a broker (Redis streams, RabbitMQ, Azure Service Bus, SQS) without
+  changing handlers.
 
 ## Observability
 

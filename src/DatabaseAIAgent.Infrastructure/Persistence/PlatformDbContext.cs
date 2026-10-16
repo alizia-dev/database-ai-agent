@@ -1,6 +1,7 @@
 using DatabaseAIAgent.Domain.Authorization;
 using DatabaseAIAgent.Domain.Billing;
 using DatabaseAIAgent.Domain.Databases;
+using DatabaseAIAgent.Domain.Jobs;
 using DatabaseAIAgent.Domain.Organizations;
 using DatabaseAIAgent.Domain.Users;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -43,6 +44,18 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     public DbSet<BillingAccount> BillingAccounts => Set<BillingAccount>();
 
     public DbSet<DatabaseConnection> DatabaseConnections => Set<DatabaseConnection>();
+
+    public DbSet<DatabaseSchema> DatabaseSchemas => Set<DatabaseSchema>();
+
+    public DbSet<DatabaseTable> DatabaseTables => Set<DatabaseTable>();
+
+    public DbSet<DatabaseRelationship> DatabaseRelationships => Set<DatabaseRelationship>();
+
+    public DbSet<StoredProcedure> StoredProcedures => Set<StoredProcedure>();
+
+    public DbSet<SchemaAnalysis> SchemaAnalyses => Set<SchemaAnalysis>();
+
+    public DbSet<BackgroundJob> BackgroundJobs => Set<BackgroundJob>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

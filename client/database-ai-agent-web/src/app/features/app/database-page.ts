@@ -83,6 +83,7 @@ const PROVIDER_NAMES: Record<string, string> = { SqlServer: 'SQL Server', Postgr
           <mat-card-actions class="actions">
             <button mat-stroked-button type="button" (click)="retest(c)" [disabled]="busy() !== null">Test connection</button>
             <a mat-button [routerLink]="['/app/database/connect']" [queryParams]="{ id: c.id }">Edit</a>
+            <a mat-button [routerLink]="['/app/database/schema']" [queryParams]="{ connection: c.id }">Browse schema</a>
             @if (confirmingDelete() === c.id) {
               <span class="confirm">
                 Remove this connection? Your database itself is not changed.

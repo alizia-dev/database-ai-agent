@@ -54,6 +54,11 @@ in `appsettings.Development.json`), so you can connect to the compose demo SQL S
 database. Credentials are encrypted with a per-machine development key (created on first use in your user profile).
 Other environments must set `ENCRYPTION_KEY`.
 
+## Background jobs locally
+
+Schema analysis runs as a background job. In Development the API processes jobs itself (`Jobs:ProcessInApi=true`),
+so `dotnet run` of the API alone is enough. With docker-compose, the `workers` container processes them.
+
 ## Build and test
 
 ```bash

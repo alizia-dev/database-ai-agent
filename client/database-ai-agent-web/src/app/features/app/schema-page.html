@@ -1,0 +1,242 @@
+<a mat-button routerLink="/app/database" class="back"><mat-icon>arrow_back</mat-icon>Databases</a>
+<h1 class="page-title">Schema</h1>
+<p class="muted">Tables, views and stored procedures discovered in your database. Only metadata is stored; no rows are read or copied.</p>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (error()) {
+  <p class="notice error" role="alert">{{ error() }}</p>
+}
+
+@if (!loading() && connections().length === 0) {
+  <p class="notice">No databases are connected yet. <a routerLink="/app/database/connect">Connect a database</a> first.</p>
+}
+
+@if (connections().length > 0) {
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="connection">
+      <mat-label>Database</mat-label>
+      <mat-select [value]="connectionId()" (selectionChange)="select($event.value)">
+        @for (c of connections(); track c.id) {
+          <mat-option [value]="c.id">{{ c.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (canAnalyze()) {
+      <button mat-flat-button type="button" (click)="analyze()" [disabled]="analysisActive()">
+        <mat-icon>travel_explore</mat-icon>{{ analysis() ? 'Re-analyze' : 'Analyze database' }}
+      </button>
+    }
+  </div>
+
+  @if (analysis(); as a) {
+    <mat-card appearance="outlined" class="analysis" [class.failed]="a.status === 'Failed'">
+      <mat-card-content>
+        @if (analysisActive()) {
+          <p role="status"><strong>{{ a.status === 'Queued' ? 'Waiting to start…' : 'Analyzing…' }}</strong> Reading catalog metadata.</p>
+          <mat-progress-bar mode="indeterminate" />
+        } @else if (a.status === 'Failed') {
+          <p role="alert"><strong>Analysis failed.</strong> {{ a.failureMessage }}</p>
+        } @else {
+          <p>
+            Last analyzed {{ a.completedAt | date: 'medium' }}:
+            <strong>{{ a.counts.tables }}</strong> tables, <strong>{{ a.counts.views }}</strong> views,
+            <strong>{{ a.counts.columns }}</strong> columns, <strong>{{ a.counts.relationships }}</strong> relationships,
+            <strong>{{ a.counts.procedures }}</strong> procedures and functions
+            @if (a.counts.newProcedures || a.counts.missingProcedures) {
+              ({{ a.counts.newProcedures }} new, {{ a.counts.missingProcedures }} no longer found)
+            }
+          </p>
+          @for (w of a.warnings; track w) {
+            <p class="warning"><mat-icon aria-hidden="true">warning</mat-icon><span>{{ w }}</span></p>
+          }
+        }
+      </mat-card-content>
+    </mat-card>
+  } @else if (connectionId()) {
+    <p class="notice">This database has not been analyzed yet.@if (canAnalyze()) { Start an analysis to discover its tables and stored procedures. }</p>
+  }
+
+  @if (overview()?.schemas?.length) {
+    <mat-form-field appearance="outline" class="schema-filter">
+      <mat-label>Schema</mat-label>
+      <mat-select [(ngModel)]="schemaFilter" (selectionChange)="searchTables(); searchProcedures()">
+        <mat-option value="">All schemas</mat-option>
+        @for (s of overview()!.schemas; track s.name) {
+          <mat-option [value]="s.name">{{ s.name }} ({{ s.tables + s.views }} tables · {{ s.procedures }} procedures)</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  <mat-tab-group animationDuration="0ms">
+    <mat-tab label="Tables & views ({{ tables()?.total ?? 0 }})">
+      <div class="browser">
+        <section class="list">
+          <mat-form-field appearance="outline" class="search">
+            <mat-label>Search tables</mat-label>
+            <input matInput [(ngModel)]="tableSearch" (keyup.enter)="searchTables()" placeholder="Name or description" />
+            <button mat-icon-button matSuffix type="button" aria-label="Search tables" (click)="searchTables()"><mat-icon>search</mat-icon></button>
+          </mat-form-field>
+          <mat-nav-list>
+            @for (t of tables()?.items ?? []; track t.id) {
+              <button mat-list-item type="button" (click)="openTable(t)" [activated]="selectedTable()?.id === t.id">
+                <mat-icon matListItemIcon>{{ t.kind === 'View' ? 'visibility' : 'table_chart' }}</mat-icon>
+                <span matListItemTitle>{{ t.schemaName }}.{{ t.name }}</span>
+                <span matListItemLine class="muted">{{ t.columnCount }} columns{{ t.description ? ' · ' + t.description : '' }}</span>
+              </button>
+            } @empty {
+              <p class="muted empty">No tables found.</p>
+            }
+          </mat-nav-list>
+          @if (pages(tables()) > 1) {
+            <div class="pager">
+              <button mat-button type="button" [disabled]="tables()!.page <= 1" (click)="searchTables(tables()!.page - 1)">Previous</button>
+              <span>Page {{ tables()!.page }} of {{ pages(tables()) }}</span>
+              <button mat-button type="button" [disabled]="tables()!.page >= pages(tables())" (click)="searchTables(tables()!.page + 1)">Next</button>
+            </div>
+          }
+        </section>
+
+        <section class="detail">
+          @if (selectedTable(); as t) {
+            <h2>{{ t.schemaName }}.{{ t.name }} <span class="muted small">{{ t.kind }}</span></h2>
+            @if (t.description) {
+              <p>{{ t.description }}</p>
+            }
+            <div class="table-scroll">
+              <table class="grid">
+                <thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Null</th><th scope="col">Key</th><th scope="col">Description</th></tr></thead>
+                <tbody>
+                  @for (c of t.columns; track c.name) {
+                    <tr>
+                      <td>{{ c.name }}</td>
+                      <td><code>{{ c.dataType }}</code></td>
+                      <td>{{ c.isNullable ? 'Yes' : 'No' }}</td>
+                      <td>{{ c.isPrimaryKey ? 'PK' : '' }}{{ c.isIdentity ? ' (identity)' : '' }}</td>
+                      <td class="muted">{{ c.description }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (t.references.length || t.referencedBy.length) {
+              <h3>Relationships</h3>
+              <ul class="plain-list">
+                @for (r of t.references; track r.name) {
+                  <li>{{ r.fromColumns.join(', ') }} → {{ r.toSchema }}.{{ r.toTable }} ({{ r.toColumns.join(', ') }})</li>
+                }
+                @for (r of t.referencedBy; track r.name) {
+                  <li>{{ r.fromSchema }}.{{ r.fromTable }} ({{ r.fromColumns.join(', ') }}) → this table</li>
+                }
+              </ul>
+            }
+            @if (t.indexes.length) {
+              <h3>Indexes</h3>
+              <ul class="plain-list">
+                @for (i of t.indexes; track i.name) {
+                  <li>{{ i.name }}{{ i.isPrimaryKey ? ' (primary key)' : i.isUnique ? ' (unique)' : '' }}: {{ i.columns.join(', ') }}</li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="muted empty">Select a table to see its columns, keys and relationships.</p>
+          }
+        </section>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Stored procedures ({{ procedures()?.total ?? 0 }})">
+      <div class="browser">
+        <section class="list">
+          <mat-form-field appearance="outline" class="search">
+            <mat-label>Search procedures</mat-label>
+            <input matInput [(ngModel)]="procedureSearch" (keyup.enter)="searchProcedures()" placeholder="Name or description" />
+            <button mat-icon-button matSuffix type="button" aria-label="Search procedures" (click)="searchProcedures()"><mat-icon>search</mat-icon></button>
+          </mat-form-field>
+          <mat-nav-list>
+            @for (p of procedures()?.items ?? []; track p.id) {
+              <button mat-list-item type="button" (click)="openProcedure(p)" [activated]="selectedProcedure()?.id === p.id">
+                <mat-icon matListItemIcon>{{ p.isMissing ? 'block' : 'functions' }}</mat-icon>
+                <span matListItemTitle>{{ p.schemaName }}.{{ p.name }}</span>
+                <span matListItemLine>
+                  @for (b of badges(p.behavior); track b.label) {
+                    <span class="badge" [attr.data-tone]="b.tone">{{ b.label }}</span>
+                  }
+                  @if (p.isMissing) {
+                    <span class="badge" data-tone="warn">No longer found</span>
+                  }
+                </span>
+              </button>
+            } @empty {
+              <p class="muted empty">No procedures found.</p>
+            }
+          </mat-nav-list>
+          @if (pages(procedures()) > 1) {
+            <div class="pager">
+              <button mat-button type="button" [disabled]="procedures()!.page <= 1" (click)="searchProcedures(procedures()!.page - 1)">Previous</button>
+              <span>Page {{ procedures()!.page }} of {{ pages(procedures()) }}</span>
+              <button mat-button type="button" [disabled]="procedures()!.page >= pages(procedures())" (click)="searchProcedures(procedures()!.page + 1)">Next</button>
+            </div>
+          }
+        </section>
+
+        <section class="detail">
+          @if (selectedProcedure(); as p) {
+            <h2>{{ p.schemaName }}.{{ p.name }} <span class="muted small">{{ p.kind }}</span></h2>
+            @if (p.description) {
+              <p>{{ p.description }}</p>
+            }
+            <p>
+              @for (b of badges(p.behavior); track b.label) {
+                <span class="badge" [attr.data-tone]="b.tone">{{ b.label }}</span>
+              }
+            </p>
+            @if (!p.canExecute) {
+              <p class="notice">The connection's account cannot execute this routine. Grant EXECUTE to use it as an AI tool.</p>
+            }
+            @if (!p.behavior.definitionAvailable) {
+              <p class="notice">The definition is not visible to this account, so its behaviour could not be verified. It will not be treated as read-only.</p>
+            }
+            <dl class="facts">
+              @if (p.returnType) {
+                <dt>Returns</dt><dd><code>{{ p.returnType }}</code></dd>
+              }
+              @if (p.declaredDataAccess) {
+                <dt>Declared</dt><dd>{{ p.declaredDataAccess }}</dd>
+              }
+              @if (p.averageDurationMs !== null) {
+                <dt>Average duration</dt><dd>{{ p.averageDurationMs.toFixed(1) }} ms</dd>
+              }
+              <dt>First seen</dt><dd>{{ p.firstSeenAt | date: 'medium' }}</dd>
+            </dl>
+            <h3>Parameters</h3>
+            @if (p.parameters.length) {
+              <table class="grid">
+                <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Direction</th><th scope="col">Required</th></tr></thead>
+                <tbody>
+                  @for (param of p.parameters; track param.name) {
+                    <tr><td>{{ param.name }}</td><td><code>{{ param.dataType }}</code></td><td>{{ param.direction }}</td><td>{{ param.hasDefault ? 'Optional' : 'Required' }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <p class="muted">No parameters.</p>
+            }
+            @if (p.resultColumns.length) {
+              <h3>Result columns</h3>
+              <ul class="plain-list">
+                @for (c of p.resultColumns; track c.ordinal) {
+                  <li>{{ c.name }} <code>{{ c.dataType }}</code></li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="muted empty">Select a procedure to see its parameters and behaviour.</p>
+          }
+        </section>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+}

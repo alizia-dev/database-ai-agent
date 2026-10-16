@@ -2,7 +2,9 @@ using DatabaseAIAgent.Application.Abstractions;
 using DatabaseAIAgent.Application.Abstractions.Email;
 using DatabaseAIAgent.Application.Abstractions.Persistence;
 using DatabaseAIAgent.Domain.Users;
+using DatabaseAIAgent.Application.Abstractions.Jobs;
 using DatabaseAIAgent.Infrastructure.Email;
+using DatabaseAIAgent.Infrastructure.Jobs;
 using DatabaseAIAgent.Infrastructure.Persistence;
 using DatabaseAIAgent.Infrastructure.Persistence.Interceptors;
 using DatabaseAIAgent.Infrastructure.Persistence.Repositories;
@@ -28,9 +30,19 @@ public static class DependencyInjection
         services.AddSingleton<IClock, SystemClock>();
 
         services.AddPlatformDatabase(configuration);
+        services.AddOptions<JobOptions>().Bind(configuration.GetSection(JobOptions.SectionName));
+        services.AddScoped<IJobQueue, DatabaseJobQueue>();
+        services.AddSingleton<IJobProcessor, DatabaseJobProcessor>();
         services.AddIdentityStores();
         services.AddEmail(configuration);
 
+        return services;
+    }
+
+    /// <summary>Runs queued background jobs in this host (Workers; or the API when <c>Jobs:ProcessInApi</c> is set).</summary>
+    public static IServiceCollection AddJobProcessing(this IServiceCollection services)
+    {
+        services.AddHostedService<JobWorkerService>();
         return services;
     }
 
@@ -75,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IBillingAccountRepository, BillingAccountRepository>();
         services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
         services.AddScoped<IDatabaseConnectionRepository, DatabaseConnectionRepository>();
+        services.AddScoped<ISchemaMetadataRepository, SchemaMetadataRepository>();
     }
 
     /// <summary>

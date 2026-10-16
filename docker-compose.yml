@@ -66,6 +66,7 @@ services:
       Jwt__SigningKey: ${JWT_SECRET:?Set JWT_SECRET in .env}
       Encryption__Key: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY in .env}
       DatabaseConnections__AllowPrivateNetworks: "true"
+      Jobs__ProcessInApi: "false"
       Email__Transport: Smtp
       Email__SmtpHost: mailpit
       Email__SmtpPort: "1025"

@@ -102,6 +102,17 @@ Endpoints gated by plan features return 403 with `code: "billing.upgrade_require
 | POST | `/connections/{id}/test` | `database.manage` + `production_access` | Re-tests with stored credentials and records the status. |
 | DELETE | `/connections/{id}` | `database.manage` | Removes platform metadata and credentials only. |
 
+### Schema discovery
+
+| Method | Path | Permission | Notes |
+|---|---|---|---|
+| POST | `/connections/{id}/analyze` | `database.analyze` + `production_access` | → 202 analysis (`Queued`). 409 `database.analysis_in_progress`. |
+| GET | `/connections/{id}/schema` | `database.view` | → `{ latestAnalysis: { status, counts, warnings, failureMessage, ... }, schemas: [{ name, tables, views, procedures }] }`. Poll this while an analysis is `Queued`/`Running`. |
+| GET | `/connections/{id}/tables?schema=&search=&page=&pageSize=` | `database.view` | Paged summaries (max 200 per page). |
+| GET | `/connections/{id}/tables/{tableId}` | `database.view` | Columns, indexes, `references` and `referencedBy` relationships. |
+| GET | `/connections/{id}/procedures?schema=&search=&includeMissing=&page=&pageSize=` | `database.view` | Summaries with `behavior` flags and `isMissing`. |
+| GET | `/connections/{id}/procedures/{procedureId}` | `database.view` | Parameters, result columns, behaviour, `isReadOnly`, `canExecute`, declared data access. The definition text is never returned. |
+
 Connection input: `{ name, provider: "SqlServer"|"PostgreSql"|"MySql", host, port, database, username, password, tlsMode: "VerifyFull"|"Required"|"Preferred"|"Disabled", connectionString }`.
 Use either the fields or `connectionString`. Failures are categories: `HostNotAllowed`, `HostUnreachable`,
 `AuthenticationFailed`, `DatabaseNotFound`, `Timeout`, `TlsFailure`, `PermissionDenied`, `Unknown`.

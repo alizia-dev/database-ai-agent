@@ -56,6 +56,12 @@ try
         .AddRagModule()
         .AddAgentModule();
 
+    // Background jobs normally run in the Workers host; local development can process them in the API instead.
+    if (builder.Configuration.GetValue<bool>("Jobs:ProcessInApi"))
+    {
+        builder.Services.AddJobProcessing();
+    }
+
     builder.Services.AddPlatformAuthentication();
     builder.Services.AddValidatorsFromAssemblyContaining<ValidationFilter>(includeInternalTypes: true);
     builder.Services.AddControllers(options => options.Filters.Add<ValidationFilter>())

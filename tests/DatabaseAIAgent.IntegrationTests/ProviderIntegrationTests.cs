@@ -1,5 +1,6 @@
 using DatabaseAIAgent.Application.Abstractions.Databases;
 using DatabaseAIAgent.Database;
+using DatabaseAIAgent.Database.Discovery;
 using DatabaseAIAgent.Database.Providers;
 using DatabaseAIAgent.Domain.Databases;
 using Microsoft.Data.SqlClient;
@@ -30,6 +31,52 @@ public abstract class ProviderContractTests<TContainer>(ContainerFixture<TContai
     protected abstract ResolvedConnection Admin { get; }
 
     protected ResolvedConnection Reporter => Admin with { Username = Accounts.Reporter, Password = Accounts.ReporterPassword };
+
+    protected abstract ISchemaDiscoverer Discoverer { get; }
+
+    [Fact]
+    public async Task Discovery_ReadsTablesKeysRoutinesAndBehaviour()
+    {
+        fixture.SkipIfUnavailable();
+
+        var discovered = await DiscoverAsync(Admin);
+
+        var customers = discovered.Tables.Single(t => t.Name.Equals("customers", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(3, customers.Columns.Count);
+        Assert.True(customers.Columns.Single(c => c.Name.Equals("id", StringComparison.OrdinalIgnoreCase)).IsPrimaryKey);
+        Assert.Contains(discovered.Relationships, r => r.FromTable.Equals("invoices", StringComparison.OrdinalIgnoreCase) && r.ToTable.Equals("customers", StringComparison.OrdinalIgnoreCase));
+
+        var reader = discovered.Routines.Single(r => r.Name.Equals(ReaderRoutine, StringComparison.OrdinalIgnoreCase));
+        var writer = discovered.Routines.Single(r => r.Name.Equals(WriterRoutine, StringComparison.OrdinalIgnoreCase));
+        Assert.True(Analyze(reader).IsReadOnly);
+        Assert.True(Analyze(writer).ModifiesData);
+        Assert.False(Analyze(writer).IsReadOnly);
+    }
+
+    [Fact]
+    public async Task Discovery_WithLeastPrivilegeAccount_SeesTheGrantedRoutine()
+    {
+        fixture.SkipIfUnavailable();
+
+        var discovered = await DiscoverAsync(Reporter);
+
+        var reader = discovered.Routines.Single(r => r.Name.Equals(ReaderRoutine, StringComparison.OrdinalIgnoreCase));
+        Assert.True(reader.CanExecute);
+    }
+
+    protected virtual string ReaderRoutine => "GetCustomers";
+
+    protected virtual string WriterRoutine => "SetCreditLimit";
+
+    private DatabaseAIAgent.Domain.Databases.RoutineBehavior Analyze(DiscoveredRoutine routine) =>
+        DatabaseAIAgent.Database.Discovery.RoutineDefinitionAnalyzer.Analyze(Provider.Kind, routine.Definition, routine.DeclaredDataAccess);
+
+    private async Task<DiscoveredDatabase> DiscoverAsync(ResolvedConnection connection)
+    {
+        await using var db = Provider.CreateConnection(connection, 10);
+        await db.OpenAsync(TestContext.Current.CancellationToken);
+        return await Discoverer.DiscoverAsync(db, new DiscoveryLimits(1000, 1000, 60), TestContext.Current.CancellationToken);
+    }
 
     [Fact]
     public async Task AdministratorAccount_ConnectsAndIsFlaggedAsAdministrator()
@@ -101,8 +148,10 @@ public sealed class SqlServerFixture : ContainerFixture<MsSqlContainer>
             $"CREATE DATABASE {Accounts.Database}",
             $"CREATE LOGIN {Accounts.Reporter} WITH PASSWORD = '{Accounts.ReporterPassword}'",
             $"USE {Accounts.Database}; CREATE TABLE dbo.Customers (Id int PRIMARY KEY, Name nvarchar(100), Balance decimal(12,2))",
+            $"USE {Accounts.Database}; CREATE TABLE dbo.Invoices (Id int PRIMARY KEY, CustomerId int NOT NULL REFERENCES dbo.Customers (Id))",
             $"USE {Accounts.Database}; EXEC('CREATE PROCEDURE dbo.GetCustomers AS SELECT Id, Name, Balance FROM dbo.Customers')",
-            $"USE {Accounts.Database}; CREATE USER {Accounts.Reporter} FOR LOGIN {Accounts.Reporter}; GRANT EXECUTE ON OBJECT::dbo.GetCustomers TO {Accounts.Reporter}",
+            $"USE {Accounts.Database}; EXEC('CREATE PROCEDURE dbo.SetCreditLimit @Id int, @Limit decimal(12,2) = 0 AS UPDATE dbo.Customers SET Balance = @Limit WHERE Id = @Id')",
+            $"USE {Accounts.Database}; CREATE USER {Accounts.Reporter} FOR LOGIN {Accounts.Reporter}; GRANT VIEW DEFINITION TO {Accounts.Reporter}; GRANT EXECUTE ON OBJECT::dbo.GetCustomers TO {Accounts.Reporter}",
         })
         {
             await using var command = new SqlCommand(sql, db);
@@ -114,6 +163,8 @@ public sealed class SqlServerFixture : ContainerFixture<MsSqlContainer>
 public sealed class SqlServerProviderTests(SqlServerFixture fixture) : ProviderContractTests<MsSqlContainer>(fixture), IClassFixture<SqlServerFixture>
 {
     protected override ICustomerDatabaseProvider Provider { get; } = new SqlServerDatabaseProvider(Accounts.Options, NullLogger<SqlServerDatabaseProvider>.Instance);
+
+    protected override ISchemaDiscoverer Discoverer { get; } = new SqlServerSchemaDiscoverer(NullLogger<SqlServerSchemaDiscoverer>.Instance);
 
     // The container uses a self-signed certificate: encrypted, without certificate validation.
     protected override ResolvedConnection Admin => new(
@@ -142,6 +193,8 @@ public sealed class PostgresFixture : ContainerFixture<PostgreSqlContainer>
         await db.OpenAsync();
         const string sql = $"""
             CREATE TABLE customers (id int PRIMARY KEY, name text, balance numeric(12,2));
+            CREATE TABLE invoices (id int PRIMARY KEY, customer_id int NOT NULL REFERENCES customers (id));
+            CREATE FUNCTION set_credit_limit(p_id int, p_limit numeric DEFAULT 0) RETURNS void LANGUAGE plpgsql AS 'BEGIN UPDATE customers SET balance = p_limit WHERE id = p_id; END';
             CREATE FUNCTION get_customers() RETURNS TABLE (id int, name text, balance numeric) LANGUAGE sql SECURITY DEFINER AS 'SELECT id, name, balance FROM customers';
             CREATE ROLE {Accounts.Reporter} WITH LOGIN PASSWORD '{Accounts.ReporterPassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE;
             GRANT CONNECT ON DATABASE {Accounts.Database} TO {Accounts.Reporter};
@@ -156,6 +209,12 @@ public sealed class PostgresFixture : ContainerFixture<PostgreSqlContainer>
 public sealed class PostgresProviderTests(PostgresFixture fixture) : ProviderContractTests<PostgreSqlContainer>(fixture), IClassFixture<PostgresFixture>
 {
     protected override ICustomerDatabaseProvider Provider { get; } = new PostgresDatabaseProvider(Accounts.Options, NullLogger<PostgresDatabaseProvider>.Instance);
+
+    protected override ISchemaDiscoverer Discoverer { get; } = new PostgresSchemaDiscoverer(NullLogger<PostgresSchemaDiscoverer>.Instance);
+
+    protected override string ReaderRoutine => "get_customers";
+
+    protected override string WriterRoutine => "set_credit_limit";
 
     protected override ResolvedConnection Admin => new(
         DatabaseProviderKind.PostgreSql, fixture.Container.Hostname, fixture.Container.GetMappedPublicPort(PostgreSqlBuilder.PostgreSqlPort),
@@ -174,7 +233,9 @@ public sealed class MySqlFixture : ContainerFixture<MySqlContainer>
         foreach (var sql in new[]
         {
             "CREATE TABLE customers (id int PRIMARY KEY, name varchar(100), balance decimal(12,2))",
+            "CREATE TABLE invoices (id int PRIMARY KEY, customer_id int NOT NULL, FOREIGN KEY (customer_id) REFERENCES customers (id))",
             "CREATE PROCEDURE GetCustomers() SQL SECURITY DEFINER SELECT id, name, balance FROM customers",
+            "CREATE PROCEDURE SetCreditLimit(IN p_id int, IN p_limit decimal(12,2)) MODIFIES SQL DATA UPDATE customers SET balance = p_limit WHERE id = p_id",
             $"CREATE USER '{Accounts.Reporter}'@'%' IDENTIFIED BY '{Accounts.ReporterPassword}'",
             $"GRANT EXECUTE ON PROCEDURE {Accounts.Database}.GetCustomers TO '{Accounts.Reporter}'@'%'",
         })
@@ -188,6 +249,8 @@ public sealed class MySqlFixture : ContainerFixture<MySqlContainer>
 public sealed class MySqlProviderTests(MySqlFixture fixture) : ProviderContractTests<MySqlContainer>(fixture), IClassFixture<MySqlFixture>
 {
     protected override ICustomerDatabaseProvider Provider { get; } = new MySqlDatabaseProvider(Accounts.Options, NullLogger<MySqlDatabaseProvider>.Instance);
+
+    protected override ISchemaDiscoverer Discoverer { get; } = new MySqlSchemaDiscoverer();
 
     protected override ResolvedConnection Admin => new(
         DatabaseProviderKind.MySql, fixture.Container.Hostname, fixture.Container.GetMappedPublicPort(MySqlBuilder.MySqlPort),

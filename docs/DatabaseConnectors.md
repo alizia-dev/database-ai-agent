@@ -91,6 +91,45 @@ deployment's outbound IP address in their database firewall.
 - Deleting a connection removes only the platform's metadata and encrypted credentials. **The customer's database is
   never modified or deleted.**
 
+## Schema discovery (Phase 5)
+
+**Analyze** (`POST /api/database/connections/{id}/analyze`, permission `database.analyze`) queues a background job;
+the request returns immediately. The Workers host opens the database (re-checking the host), reads **catalog
+metadata only**, and merges it into the platform database in a single save. No table rows are read or copied.
+
+| Engine | Source | Visible to a least-privilege account |
+|---|---|---|
+| SQL Server | `sys.*` catalog views, `OBJECT_DEFINITION`, `sys.dm_exec_describe_first_result_set_for_object` | With `VIEW DEFINITION`: everything. Without it: only granted objects, no definitions. |
+| PostgreSQL | `pg_class`, `pg_attribute`, `pg_index`, `pg_constraint`, `pg_proc` | Full metadata (system catalogs are world-readable). Extension-owned objects are excluded. |
+| MySQL | `information_schema` | Only objects the account has privileges on (a procedure-only account sees its routines but not the tables). |
+
+Stored metadata: schemas; tables and views (description, the engine's row estimate, columns with type, nullability,
+primary key, identity and description; indexes); foreign-key relationships; procedures and functions (kind,
+description, return type, whether the account can execute them, parameters with direction and defaults, result
+columns where the engine can describe them, average duration where statistics are visible).
+
+**Behaviour analysis.** Each routine's definition is analyzed for writes (`INSERT`/`UPDATE`/`MERGE`), deletes
+(`DELETE`/`TRUNCATE`), schema changes (DDL, `GRANT`), dynamic SQL and calls to other routines. Comments, string
+literals and quoted identifiers are ignored. Writes to temporary tables and table variables do not count, and neither
+does `SELECT ... FOR UPDATE`. The result is deliberately conservative:
+
+- A routine is **read-only** only if its definition was readable and none of these were found.
+- An unreadable definition is **unknown**, never read-only.
+- MySQL's declared `MODIFIES SQL DATA` counts as a write.
+- For PostgreSQL, the declared volatility is recorded: `STABLE`/`IMMUTABLE` functions cannot modify data (the engine
+  enforces it), which is the strongest signal, because function calls inside expressions cannot be detected statically.
+
+The definition text itself is **not stored**; only a SHA-256 hash is kept, to detect changes.
+
+**Stable identity.** Tables and procedures are matched by schema, name (and, for PostgreSQL overloads, signature).
+Re-analysis updates them in place, so procedure IDs stay stable for the AI tools generated from them (Phase 6).
+Procedures that disappear are kept and flagged **missing**; tables that disappear are removed.
+
+**Limits.** `SchemaDiscovery:MaxTables` and `MaxProcedures` (5,000 each) and `CommandTimeoutSeconds` (120). When a
+limit is exceeded, a warning is recorded on the analysis.
+
+Browse the result under **Databases → Browse schema** (`/app/database/schema`), or through the API (see API.md).
+
 ## Private-network connector (design, not yet implemented)
 
 For databases that must not be reachable from the internet, a small **connector agent** will run inside the
@@ -108,11 +147,15 @@ is direct or tunnelled.
 
 ## Testing
 
+- Unit tests cover the definition analyzer (writes, temp tables, dynamic SQL, nested calls, comments and literals),
+  the job queue (claiming, retry backoff, crashed-worker recovery) and the catalog merge (stable IDs, missing
+  procedures).
 - Unit tests cover the host guard, encryption (tampering, wrong owner, rotation), connection-string building
   (injection attempts), and option filtering when parsing.
 - `tests/DatabaseAIAgent.IntegrationTests` runs each provider against **real** SQL Server 2022, PostgreSQL 17 and
   MySQL 8.4 containers (Testcontainers). The containers set up a least-privilege account exactly as the scripts
-  above. These tests are skipped automatically when Docker is unavailable:
+  above. They cover connection tests and schema discovery (tables, keys, relationships, routines, behaviour). These tests
+  are skipped automatically when Docker is unavailable:
 
   ```bash
   dotnet test --project tests/DatabaseAIAgent.IntegrationTests

@@ -22,6 +22,7 @@ public static class WorkerServices
             .AddSecretProtection(configuration, environment)
             .AddBillingModule(configuration)
             .AddBillingWorkers()
+            .AddJobProcessing()
             .AddDatabaseModule(configuration)
             .AddRagModule();
 
