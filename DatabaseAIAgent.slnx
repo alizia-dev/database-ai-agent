@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DatabaseAIAgent.Agent/DatabaseAIAgent.Agent.csproj" />
+    <Project Path="src/DatabaseAIAgent.Api/DatabaseAIAgent.Api.csproj" />
+    <Project Path="src/DatabaseAIAgent.Application/DatabaseAIAgent.Application.csproj" />
+    <Project Path="src/DatabaseAIAgent.Billing/DatabaseAIAgent.Billing.csproj" />
+    <Project Path="src/DatabaseAIAgent.Database/DatabaseAIAgent.Database.csproj" />
+    <Project Path="src/DatabaseAIAgent.Domain/DatabaseAIAgent.Domain.csproj" />
+    <Project Path="src/DatabaseAIAgent.Infrastructure/DatabaseAIAgent.Infrastructure.csproj" />
+    <Project Path="src/DatabaseAIAgent.Rag/DatabaseAIAgent.Rag.csproj" />
+    <Project Path="src/DatabaseAIAgent.Security/DatabaseAIAgent.Security.csproj" />
+    <Project Path="src/DatabaseAIAgent.Tools/DatabaseAIAgent.Tools.csproj" />
+    <Project Path="src/DatabaseAIAgent.Workers/DatabaseAIAgent.Workers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DatabaseAIAgent.Api.Tests/DatabaseAIAgent.Api.Tests.csproj" />
+    <Project Path="tests/DatabaseAIAgent.ArchitectureTests/DatabaseAIAgent.ArchitectureTests.csproj" />
+    <Project Path="tests/DatabaseAIAgent.UnitTests/DatabaseAIAgent.UnitTests.csproj" />
+  </Folder>
+</Solution>

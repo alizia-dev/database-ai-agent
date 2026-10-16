@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <UserSecretsId>database-ai-agent-workers</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DatabaseAIAgent.Application\DatabaseAIAgent.Application.csproj" />
+    <ProjectReference Include="..\DatabaseAIAgent.Infrastructure\DatabaseAIAgent.Infrastructure.csproj" />
+    <ProjectReference Include="..\DatabaseAIAgent.Security\DatabaseAIAgent.Security.csproj" />
+    <ProjectReference Include="..\DatabaseAIAgent.Billing\DatabaseAIAgent.Billing.csproj" />
+    <ProjectReference Include="..\DatabaseAIAgent.Database\DatabaseAIAgent.Database.csproj" />
+    <ProjectReference Include="..\DatabaseAIAgent.Rag\DatabaseAIAgent.Rag.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
+
+</Project>

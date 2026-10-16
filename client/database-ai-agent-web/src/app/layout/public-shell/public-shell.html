@@ -1,0 +1,18 @@
+<mat-toolbar class="topbar">
+  <a class="brand" routerLink="/">Database AI Agent</a>
+</mat-toolbar>
+
+<main class="content">
+  <router-outlet />
+</main>
+
+<footer class="footer">
+  <span>&copy; {{ year }} Database AI Agent</span>
+  <span class="api-status" [attr.data-state]="apiStatus().state">
+    @switch (apiStatus().state) {
+      @case ('online') { Service online }
+      @case ('offline') { Service unavailable }
+      @default { Checking service&hellip; }
+    }
+  </span>
+</footer>
