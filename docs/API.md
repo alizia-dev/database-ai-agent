@@ -117,6 +117,21 @@ Connection input: `{ name, provider: "SqlServer"|"PostgreSql"|"MySql", host, por
 Use either the fields or `connectionString`. Failures are categories: `HostNotAllowed`, `HostUnreachable`,
 `AuthenticationFailed`, `DatabaseNotFound`, `Timeout`, `TlsFailure`, `PermissionDenied`, `Unknown`.
 
+## AI tools: `/api/tools`
+
+See [ToolCalling.md](ToolCalling.md).
+
+| Method | Path | Permission | Notes |
+|---|---|---|---|
+| GET | `/tools?connectionId=&status=&search=` | `tools.view` | → `[{ id, name, description, operation, risk, classificationSource, status, disabledReason, procedureName, parameterCount, supported, approvedAt }]` |
+| GET | `/tools/{id}` | `tools.view` | → `{ summary, classificationReasons[], parameters[], parametersSchema, allowedRoles[], timeoutSeconds, maxRows, maxResultBytes, requiresConfirmation, unsupportedReason, canApprove, approvalBlockedReason, canConfirmReadOnly, procedure, recentExecutions[] }` |
+| PUT | `/tools/{id}` | `tools.manage` | Body `{ name, description, parameterDescriptions: { name: text }, timeoutSeconds, maxRows, maxResultKilobytes, allowedRoles[] }`. 409 `tools.name_taken`. |
+| POST | `/tools/{id}/approve` | `tools.manage` + `production_access` | Body `{ acknowledgeDataChanges }` (required for WRITE/DELETE). 403 `tools.write_disabled` / `tools.admin_not_allowed` / `billing.limit_reached`; 400 `tools.unsupported` / `tools.rejected` / `tools.acknowledgement_required`. |
+| POST | `/tools/{id}/disable` · `/reject` (`{ reason }`) · `/reopen` | `tools.manage` | |
+| POST | `/tools/{id}/confirm-read-only` | `tools.manage` | Body `{ confirmation: true }`. Unverified tools only (400 `tools.classification_verified`). |
+| POST | `/database/connections/{id}/tools/generate` | `tools.manage` | Re-synchronizes tools with the analyzed catalog. → `{ created, updated, disabledChanged, disabledUnavailable, unchanged }` |
+| POST | `/tools/{name}/execute` | `tools.execute` + `production_access` | Body `{ arguments: { ... }, confirmed }`. Always 200 with `{ outcome, message, reasonCode, executionId, columns[], rows[][], outputValues, truncated, retrievedAt, durationMs, confirmationPrompt, argumentErrors }`. Rate limited per user. |
+
 ## System (public)
 
 `GET /api/system/info` → `{ name, version, environment }`; `GET /health/live`; `GET /health/ready`.

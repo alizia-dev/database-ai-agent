@@ -10,4 +10,7 @@ internal static class RateLimitPolicies
 
     /// <summary>Endpoints that open outbound connections to customer databases (limits probing of hosts and ports).</summary>
     public const string ConnectionTest = "connection-test";
+
+    /// <summary>Tool executions, partitioned per authenticated user (falls back to IP).</summary>
+    public const string ToolExecution = "tool-execution";
 }

@@ -11,6 +11,7 @@
     <ProjectReference Include="..\DatabaseAIAgent.Billing\DatabaseAIAgent.Billing.csproj" />
     <ProjectReference Include="..\DatabaseAIAgent.Database\DatabaseAIAgent.Database.csproj" />
     <ProjectReference Include="..\DatabaseAIAgent.Rag\DatabaseAIAgent.Rag.csproj" />
+    <ProjectReference Include="..\DatabaseAIAgent.Tools\DatabaseAIAgent.Tools.csproj" />
   </ItemGroup>
 
   <ItemGroup>

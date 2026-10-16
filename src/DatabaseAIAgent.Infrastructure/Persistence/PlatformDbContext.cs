@@ -2,6 +2,7 @@ using DatabaseAIAgent.Domain.Authorization;
 using DatabaseAIAgent.Domain.Billing;
 using DatabaseAIAgent.Domain.Databases;
 using DatabaseAIAgent.Domain.Jobs;
+using DatabaseAIAgent.Domain.Tools;
 using DatabaseAIAgent.Domain.Organizations;
 using DatabaseAIAgent.Domain.Users;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -56,6 +57,10 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     public DbSet<SchemaAnalysis> SchemaAnalyses => Set<SchemaAnalysis>();
 
     public DbSet<BackgroundJob> BackgroundJobs => Set<BackgroundJob>();
+
+    public DbSet<AiTool> AiTools => Set<AiTool>();
+
+    public DbSet<ToolExecution> ToolExecutions => Set<ToolExecution>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

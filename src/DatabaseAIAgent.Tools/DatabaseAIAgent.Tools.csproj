@@ -5,4 +5,13 @@
     <ProjectReference Include="..\DatabaseAIAgent.Domain\DatabaseAIAgent.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DatabaseAIAgent.UnitTests" />
+    <InternalsVisibleTo Include="DatabaseAIAgent.Api.Tests" />
+  </ItemGroup>
+
 </Project>

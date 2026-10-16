@@ -237,6 +237,7 @@ internal sealed class SchemaAnalysisJobHandler(
     IUnitOfWork unitOfWork,
     IClock clock,
     IOptions<DiscoveryOptions> options,
+    IEnumerable<DatabaseAIAgent.Application.Abstractions.Tools.IToolCatalogSynchronizer> toolSynchronizers,
     ILogger<SchemaAnalysisJobHandler> logger) : IJobHandler
 {
     public string JobType => SchemaAnalysisService.JobType;
@@ -291,6 +292,20 @@ internal sealed class SchemaAnalysisJobHandler(
         logger.LogInformation(
             "Schema analysis {AnalysisId} finished: {Tables} tables, {Views} views, {Procedures} routines ({New} new, {Missing} missing)",
             analysis.Id, counts.Tables, counts.Views, counts.Procedures, counts.NewProcedures, counts.MissingProcedures);
+
+        // Generate tool drafts for new procedures and disable tools whose procedure changed or disappeared.
+        foreach (var synchronizer in toolSynchronizers)
+        {
+            try
+            {
+                await synchronizer.SyncAsync(connection.Id, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Tool synchronization after analysis {AnalysisId} failed", analysis.Id);
+                unitOfWork.DiscardChanges();
+            }
+        }
     }
 
     private async Task FailAsync(Guid analysisId, ConnectionFailureKind failure, CancellationToken cancellationToken)

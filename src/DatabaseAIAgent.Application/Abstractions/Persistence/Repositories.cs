@@ -49,6 +49,8 @@ public interface IRolePermissionRepository
     /// <summary>Permissions granted through the user's role(s); empty for unknown or deactivated users.</summary>
     Task<IReadOnlyList<string>> GetPermissionsForActiveUserAsync(Guid userId, CancellationToken cancellationToken);
 
+    Task<string?> GetRoleForActiveUserAsync(Guid userId, CancellationToken cancellationToken);
+
     Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> GetAllAsync(CancellationToken cancellationToken);
 
     /// <summary>Replaces the role's permission set (tracked; persisted on save).</summary>

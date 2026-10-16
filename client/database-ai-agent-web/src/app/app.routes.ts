@@ -33,6 +33,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/app/database-connect-page').then((m) => m.DatabaseConnectPage),
       },
       {
+        path: 'tools',
+        title: 'AI tools — Database AI Agent',
+        canActivate: [permissionGuard('tools.view')],
+        loadComponent: () => import('./features/app/tools-page').then((m) => m.ToolsPage),
+      },
+      {
+        path: 'tools/:id',
+        title: 'AI tool — Database AI Agent',
+        canActivate: [permissionGuard('tools.view')],
+        loadComponent: () => import('./features/app/tool-detail-page').then((m) => m.ToolDetailPage),
+      },
+      {
         path: 'team',
         title: 'Team — Database AI Agent',
         canActivate: [permissionGuard('users.view')],

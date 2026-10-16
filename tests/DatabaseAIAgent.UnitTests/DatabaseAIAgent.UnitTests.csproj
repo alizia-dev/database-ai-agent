@@ -23,6 +23,7 @@
     <ProjectReference Include="../../src/DatabaseAIAgent.Security/DatabaseAIAgent.Security.csproj" />
     <ProjectReference Include="../../src/DatabaseAIAgent.Billing/DatabaseAIAgent.Billing.csproj" />
     <ProjectReference Include="../../src/DatabaseAIAgent.Database/DatabaseAIAgent.Database.csproj" />
+    <ProjectReference Include="../../src/DatabaseAIAgent.Tools/DatabaseAIAgent.Tools.csproj" />
   </ItemGroup>
 
   <ItemGroup>

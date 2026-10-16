@@ -12,8 +12,8 @@ Each phase ends with a report: Completed, Files changed, Migrations, APIs create
 | 3 | Billing and subscriptions | `Plan` (DB-configured, admin-editable, Stripe price IDs in DB), `Subscription`, `Invoice`, `Payment`, `WebhookEvent` (idempotent); `IPaymentProvider` (Stripe, PayPal); Checkout, portal, webhooks with signature verification; entitlement service; trial config; pricing API and page; billing page | **Done** |
 | 4 | Database connectors | `DatabaseConnection` with credentials encrypted at rest (`ISecretProtector` backed by an env key or Key Vault/Secrets Manager), `ICustomerDatabaseProvider` for SQL Server/PostgreSQL/MySQL (Dapper), connection test and permission check, SSRF guard on host input, least-privilege setup guide, connector UI | **Done** |
 | 5 | Schema and stored-procedure discovery | Job queue abstraction (`IJobQueue`, Postgres-backed first, Redis/Service Bus/SQS adapters), analysis worker, metadata entities (schemas/tables/columns/relationships/procedures/parameters), schema browser UI | **Done** |
-| 6 | Tool registry and generation | `AiTool` generation from procedures (JSON schema), READ/WRITE/DELETE/ADMIN classification and risk level, Disabled by default, admin approval workflow, `ToolPermission`, the execution pipeline (auth, authz, subscription, enabled, permission, validation, timeout, execute, audit), limits and circuit breaker | Next |
-| 7 | RAG | `KnowledgeDocument`/`KnowledgeChunk`/`Embedding`, pgvector behind `IVectorStore`, metadata/tool/terminology indexing, document upload (validated, scan hook), retrieval API | |
+| 6 | Tool registry and generation | `AiTool` generation from procedures (JSON schema), READ/WRITE/DELETE/ADMIN classification and risk level, Disabled by default, admin approval workflow, `ToolPermission`, the execution pipeline (auth, authz, subscription, enabled, permission, validation, timeout, execute, audit), limits and circuit breaker | **Done** |
+| 7 | RAG | `KnowledgeDocument`/`KnowledgeChunk`/`Embedding`, pgvector behind `IVectorStore`, metadata/tool/terminology indexing, document upload (validated, scan hook), retrieval API | Next |
 | 8 | AI provider abstraction | `IChatModel`, `IEmbeddingModel`, `IToolCallingModel`; OpenAI, Anthropic, Qwen-compatible adapters; Polly resilience; per-plan model selection; token/cost accounting | |
 | 9 | Agent and tool calling | Orchestrator loop (MaxIterations, MaxToolCalls, row and size limits), prompt-injection-safe context segmentation, backend validation of every tool call, WRITE confirmation flow, honesty and provenance rules, conversation summarization | |
 | 10 | Angular chat and product UI | SignalR streaming chat with tool status, conversations CRUD and export, dashboard, onboarding wizard, landing/pricing/demo/security pages, team, settings | |
@@ -40,4 +40,8 @@ Each phase ends with a report: Completed, Files changed, Migrations, APIs create
 - **Background jobs and discovery (Phase 5)**: database-backed `IJobQueue` (outbox semantics, conditional-update
   claiming, crashed-worker recovery, backoff); per-engine `ISchemaDiscoverer`; conservative routine behaviour
   analysis; catalog merge with stable procedure IDs.
+- **Tools (Phase 6)**: tools are synchronized from the catalog after each analysis; classification is conservative
+  (unverified definitions count as writes); a single `IToolExecutor` pipeline is shared by the UI test panel and the
+  agent; READ tools run in read-only/rolled-back transactions; per-database concurrency limit and circuit breaker.
+  See [ToolCalling.md](ToolCalling.md).
 - **Tests**: xUnit v3 on Microsoft.Testing.Platform; SQLite in-memory for fast persistence unit tests; PostgreSQL-specific behaviour is covered by integration tests (Phase 13 / Testcontainers).

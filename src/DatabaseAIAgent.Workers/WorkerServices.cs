@@ -5,6 +5,7 @@ using DatabaseAIAgent.Database;
 using DatabaseAIAgent.Infrastructure;
 using DatabaseAIAgent.Rag;
 using DatabaseAIAgent.Security;
+using DatabaseAIAgent.Tools;
 
 namespace DatabaseAIAgent.Workers;
 
@@ -24,6 +25,7 @@ public static class WorkerServices
             .AddBillingWorkers()
             .AddJobProcessing()
             .AddDatabaseModule(configuration)
+            .AddToolCatalogSync(configuration)
             .AddRagModule();
 
         // Background jobs act as the system, never as a signed-in user.

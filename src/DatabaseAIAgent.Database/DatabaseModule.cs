@@ -1,7 +1,9 @@
 using DatabaseAIAgent.Application.Abstractions.Databases;
 using DatabaseAIAgent.Application.Abstractions.Jobs;
 using DatabaseAIAgent.Database.Connections;
+using DatabaseAIAgent.Application.Abstractions.Tools;
 using DatabaseAIAgent.Database.Discovery;
+using DatabaseAIAgent.Database.Execution;
 using DatabaseAIAgent.Database.Networking;
 using DatabaseAIAgent.Database.Providers;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +42,10 @@ public static class DatabaseModule
         services.AddScoped<SchemaCatalogWriter>();
         services.AddScoped<SchemaAnalysisService>();
         services.AddScoped<IJobHandler, SchemaAnalysisJobHandler>();
+
+        services.AddOptions<ExecutionOptions>().Bind(configuration.GetSection(ExecutionOptions.SectionName));
+        services.AddSingleton<ConnectionGates>();
+        services.AddScoped<ICustomerProcedureInvoker, CustomerProcedureInvoker>();
 
         return services;
     }

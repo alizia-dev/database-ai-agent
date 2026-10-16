@@ -79,6 +79,24 @@ Customer data is not stored as a copy of the source database.
   connection count.
 - See [DatabaseConnectors.md](DatabaseConnectors.md).
 
+## AI tools (Phase 6)
+
+- The model cannot run SQL. It can only call tools, and each tool maps to one stored procedure that an
+  administrator approved. Tools are created disabled, and ADMIN tools (DDL or permission changes) can never be
+  enabled. WRITE/DELETE tools stay blocked unless `Tools:AllowWriteTools` is on, need an explicit acknowledgement to
+  approve, and ask the user for confirmation before every run.
+- Classification is conservative. A routine whose definition cannot be read is treated as a write until an
+  administrator confirms otherwise. Changing a procedure disables its tool until it is reviewed again.
+- Every execution passes authentication, the `tools.execute` permission, plan and monthly limits, the tool's
+  enabled state, the tool's role allowlist (the role is read from the database), strict argument validation
+  (unknown arguments rejected), confirmation, and a timeout.
+- Values are always sent as typed parameters, and identifiers come only from the catalog and are quoted. READ tools
+  run in a transaction that is read-only (PostgreSQL/MySQL) or always rolled back (SQL Server).
+- Results are capped by rows and bytes. Each customer database has a concurrency limit and a circuit breaker, and
+  executions are rate limited per user.
+- Every attempt is audited with redacted arguments. Result rows and driver error text are never stored or returned.
+- See [ToolCalling.md](ToolCalling.md).
+
 ## HTTP hardening (Phase 1)
 
 Security headers (nosniff, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a restrictive CSP for JSON

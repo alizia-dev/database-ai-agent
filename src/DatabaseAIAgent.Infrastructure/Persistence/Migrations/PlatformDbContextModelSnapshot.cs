@@ -949,6 +949,164 @@ namespace DatabaseAIAgent.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DatabaseAIAgent.Domain.Tools.AiTool", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<string>>("ClassificationReasons")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("ClassificationSource")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("DisabledReason")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MaxResultBytes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxRows")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Risk")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("SourceDefinitionHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid>("StoredProcedureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TimeoutSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UnsupportedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedByUserId");
+
+                    b.HasIndex("ConnectionId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("StoredProcedureId")
+                        .IsUnique();
+
+                    b.ToTable("ai_tools", "platform");
+                });
+
+            modelBuilder.Entity("DatabaseAIAgent.Domain.Tools.ToolExecution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Confirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ReasonCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("RedactedArguments")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<long>("ResultBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("ToolId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Truncated")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ToolId", "StartedAt");
+
+                    b.ToTable("tool_executions", "platform");
+                });
+
             modelBuilder.Entity("DatabaseAIAgent.Domain.Users.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1515,6 +1673,113 @@ namespace DatabaseAIAgent.Infrastructure.Persistence.Migrations
                     b.Navigation("Parameters");
 
                     b.Navigation("ResultColumns");
+                });
+
+            modelBuilder.Entity("DatabaseAIAgent.Domain.Tools.AiTool", b =>
+                {
+                    b.HasOne("DatabaseAIAgent.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DatabaseAIAgent.Domain.Databases.DatabaseConnection", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DatabaseAIAgent.Domain.Databases.StoredProcedure", null)
+                        .WithMany()
+                        .HasForeignKey("StoredProcedureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("DatabaseAIAgent.Domain.Tools.ToolParameter", "Parameters", b1 =>
+                        {
+                            b1.Property<Guid>("AiToolId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<string>("Description");
+
+                            b1.Property<int?>("MaxLength");
+
+                            b1.Property<decimal?>("Maximum");
+
+                            b1.Property<decimal?>("Minimum");
+
+                            b1.Property<string>("Name")
+                                .IsRequired();
+
+                            b1.Property<int>("Ordinal");
+
+                            b1.Property<bool>("Required");
+
+                            b1.Property<string>("SourceDataType")
+                                .IsRequired();
+
+                            b1.Property<string>("SourceName")
+                                .IsRequired();
+
+                            b1.Property<int>("Type");
+
+                            b1.HasKey("AiToolId", "__synthesizedOrdinal");
+
+                            b1.ToTable("ai_tools", "platform");
+
+                            b1
+                                .ToJson("Parameters")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AiToolId");
+                        });
+
+                    b.OwnsMany("DatabaseAIAgent.Domain.Tools.ToolPermission", "AllowedRoles", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("Role")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)");
+
+                            b1.Property<Guid>("ToolId")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ToolId");
+
+                            b1.ToTable("tool_permissions", "platform");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ToolId");
+                        });
+
+                    b.Navigation("AllowedRoles");
+
+                    b.Navigation("Parameters");
+                });
+
+            modelBuilder.Entity("DatabaseAIAgent.Domain.Tools.ToolExecution", b =>
+                {
+                    b.HasOne("DatabaseAIAgent.Domain.Tools.AiTool", null)
+                        .WithMany()
+                        .HasForeignKey("ToolId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DatabaseAIAgent.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DatabaseAIAgent.Domain.Users.RefreshToken", b =>

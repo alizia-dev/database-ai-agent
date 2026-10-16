@@ -1,6 +1,9 @@
 using DatabaseAIAgent.Application.Abstractions.Databases;
 using DatabaseAIAgent.Database;
+using DatabaseAIAgent.Application.Abstractions.Tools;
 using DatabaseAIAgent.Database.Discovery;
+using DatabaseAIAgent.Database.Execution;
+using DatabaseAIAgent.Domain.Tools;
 using DatabaseAIAgent.Database.Providers;
 using DatabaseAIAgent.Domain.Databases;
 using Microsoft.Data.SqlClient;
@@ -79,6 +82,80 @@ public abstract class ProviderContractTests<TContainer>(ContainerFixture<TContai
     }
 
     [Fact]
+    public async Task Invoker_RunsTheGrantedReadRoutineWithTheLeastPrivilegeAccount()
+    {
+        fixture.SkipIfUnavailable();
+        var procedure = await ProcedureAsync(ReaderRoutine);
+
+        var result = await InvokerFor(Reporter).InvokeAsync(
+            new ProcedureInvocation(procedure.ConnectionId, procedure, [], ReadOnly: true, 30, 100, 1024 * 1024), TestContext.Current.CancellationToken);
+
+        Assert.Equal(["id", "name", "balance"], result.Columns.Select(c => c.ToLowerInvariant()));
+        Assert.Single(result.Rows);
+    }
+
+    [Fact]
+    public async Task Invoker_ReadOnlyCall_CannotChangeData()
+    {
+        fixture.SkipIfUnavailable();
+        var procedure = await ProcedureAsync(WriterRoutine);
+        var idParameter = procedure.Parameters.OrderBy(p => p.Ordinal).First();
+        var limitParameter = procedure.Parameters.OrderBy(p => p.Ordinal).Last();
+
+        // Even a misclassified writer cannot persist changes when run as read-only: PostgreSQL and MySQL reject the
+        // write; SQL Server's transaction is rolled back.
+        try
+        {
+            await InvokerFor(Admin).InvokeAsync(new ProcedureInvocation(procedure.ConnectionId, procedure,
+                [
+                    new ProcedureArgument(idParameter.Name, ToolParameterType.Integer, 1L),
+                    new ProcedureArgument(limitParameter.Name, ToolParameterType.Number, 999m),
+                ],
+                ReadOnly: true, 30, 100, 1024 * 1024), TestContext.Current.CancellationToken);
+        }
+        catch (ProcedureExecutionException ex)
+        {
+            Assert.Equal(ProcedureFailure.ReadOnlyViolation, ex.Failure);
+        }
+
+        var reader = await ProcedureAsync(ReaderRoutine);
+        var rows = await InvokerFor(Admin).InvokeAsync(
+            new ProcedureInvocation(reader.ConnectionId, reader, [], ReadOnly: true, 30, 100, 1024 * 1024), TestContext.Current.CancellationToken);
+        Assert.Equal(100m, Convert.ToDecimal(rows.Rows[0][2], System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    private async Task<StoredProcedure> ProcedureAsync(string name)
+    {
+        var routine = (await DiscoverAsync(Admin)).Routines.Single(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        var procedure = new StoredProcedure(Guid.NewGuid(), routine.Schema, routine.Name, routine.Signature, DateTimeOffset.UtcNow);
+        procedure.Update(routine.Kind, routine.Description, routine.ReturnType, routine.CanExecute, RoutineBehavior.Unknown, routine.DeclaredDataAccess, null, null,
+            routine.Parameters.Select(p => new ProcedureParameter(p.Name, p.Ordinal, p.DataType, p.MaxLength, p.Precision, p.Scale, p.Direction, p.HasDefault)),
+            [], DateTimeOffset.UtcNow);
+        return procedure;
+    }
+
+    private CustomerProcedureInvoker InvokerFor(ResolvedConnection connection) => new(
+        new DirectConnector(Provider, connection),
+        new ConnectionGates(Microsoft.Extensions.Options.Options.Create(new ExecutionOptions())),
+        new UtcClock(),
+        NullLogger<CustomerProcedureInvoker>.Instance);
+
+    private sealed class DirectConnector(ICustomerDatabaseProvider provider, ResolvedConnection connection) : ICustomerDatabaseConnector
+    {
+        public async Task<System.Data.Common.DbConnection> OpenAsync(Guid connectionId, CancellationToken cancellationToken)
+        {
+            var db = provider.CreateConnection(connection, 10);
+            await db.OpenAsync(cancellationToken);
+            return db;
+        }
+    }
+
+    private sealed class UtcClock : DatabaseAIAgent.Application.Abstractions.IClock
+    {
+        public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+    }
+
+    [Fact]
     public async Task AdministratorAccount_ConnectsAndIsFlaggedAsAdministrator()
     {
         fixture.SkipIfUnavailable();
@@ -148,6 +225,7 @@ public sealed class SqlServerFixture : ContainerFixture<MsSqlContainer>
             $"CREATE DATABASE {Accounts.Database}",
             $"CREATE LOGIN {Accounts.Reporter} WITH PASSWORD = '{Accounts.ReporterPassword}'",
             $"USE {Accounts.Database}; CREATE TABLE dbo.Customers (Id int PRIMARY KEY, Name nvarchar(100), Balance decimal(12,2))",
+            $"USE {Accounts.Database}; INSERT INTO dbo.Customers VALUES (1, N'Contoso', 100)",
             $"USE {Accounts.Database}; CREATE TABLE dbo.Invoices (Id int PRIMARY KEY, CustomerId int NOT NULL REFERENCES dbo.Customers (Id))",
             $"USE {Accounts.Database}; EXEC('CREATE PROCEDURE dbo.GetCustomers AS SELECT Id, Name, Balance FROM dbo.Customers')",
             $"USE {Accounts.Database}; EXEC('CREATE PROCEDURE dbo.SetCreditLimit @Id int, @Limit decimal(12,2) = 0 AS UPDATE dbo.Customers SET Balance = @Limit WHERE Id = @Id')",
@@ -193,6 +271,7 @@ public sealed class PostgresFixture : ContainerFixture<PostgreSqlContainer>
         await db.OpenAsync();
         const string sql = $"""
             CREATE TABLE customers (id int PRIMARY KEY, name text, balance numeric(12,2));
+            INSERT INTO customers VALUES (1, 'Contoso', 100);
             CREATE TABLE invoices (id int PRIMARY KEY, customer_id int NOT NULL REFERENCES customers (id));
             CREATE FUNCTION set_credit_limit(p_id int, p_limit numeric DEFAULT 0) RETURNS void LANGUAGE plpgsql AS 'BEGIN UPDATE customers SET balance = p_limit WHERE id = p_id; END';
             CREATE FUNCTION get_customers() RETURNS TABLE (id int, name text, balance numeric) LANGUAGE sql SECURITY DEFINER AS 'SELECT id, name, balance FROM customers';
@@ -233,6 +312,7 @@ public sealed class MySqlFixture : ContainerFixture<MySqlContainer>
         foreach (var sql in new[]
         {
             "CREATE TABLE customers (id int PRIMARY KEY, name varchar(100), balance decimal(12,2))",
+            "INSERT INTO customers VALUES (1, 'Contoso', 100)",
             "CREATE TABLE invoices (id int PRIMARY KEY, customer_id int NOT NULL, FOREIGN KEY (customer_id) REFERENCES customers (id))",
             "CREATE PROCEDURE GetCustomers() SQL SECURITY DEFINER SELECT id, name, balance FROM customers",
             "CREATE PROCEDURE SetCreditLimit(IN p_id int, IN p_limit decimal(12,2)) MODIFIES SQL DATA UPDATE customers SET balance = p_limit WHERE id = p_id",

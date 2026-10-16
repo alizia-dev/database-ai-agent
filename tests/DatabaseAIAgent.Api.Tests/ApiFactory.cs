@@ -39,6 +39,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public Databases.FakeDiscovery Discovery { get; } = new();
 
+    public Tools.FakeProcedureInvoker Procedures { get; } = new();
+
     private string ConnectionString => $"Data Source={_databasePath};Default Timeout=30";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -50,6 +52,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ApiSecurity:AuthRateLimitPermitsPerMinute", "10000");
         builder.UseSetting("ApiSecurity:RefreshRateLimitPermitsPerMinute", "10000");
         builder.UseSetting("ApiSecurity:ConnectionTestRateLimitPermitsPerMinute", "10000");
+        builder.UseSetting("ApiSecurity:ToolExecutionRateLimitPermitsPerMinute", "10000");
         builder.UseSetting("ApiSecurity:RateLimitPermitsPerMinute", "100000");
         builder.UseSetting("App:PublicUrl", PublicAppUrl);
         builder.UseSetting("Jwt:SigningKey", "test-signing-key-that-is-long-enough-0123456789");
@@ -94,6 +97,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 && d.ImplementationType?.Name == "PostgresSchemaDiscoverer");
             services.Remove(realPostgresDiscoverer);
             services.AddSingleton<DatabaseAIAgent.Application.Abstractions.Databases.ISchemaDiscoverer>(Discovery);
+
+            services.RemoveAll<DatabaseAIAgent.Application.Abstractions.Tools.ICustomerProcedureInvoker>();
+            services.AddSingleton<DatabaseAIAgent.Application.Abstractions.Tools.ICustomerProcedureInvoker>(Procedures);
         });
     }
 

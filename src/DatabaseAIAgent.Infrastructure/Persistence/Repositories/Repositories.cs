@@ -75,6 +75,13 @@ internal sealed class RolePermissionRepository(PlatformDbContext db) : IRolePerm
             .Distinct()
             .ToListAsync(cancellationToken);
 
+    public Task<string?> GetRoleForActiveUserAsync(Guid userId, CancellationToken cancellationToken) =>
+        (from user in db.Users
+         where user.Id == userId && user.IsActive
+         join userRole in db.UserRoles on user.Id equals userRole.UserId
+         join role in db.Roles on userRole.RoleId equals role.Id
+         select role.Name).FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var rows = await db.RolePermissions.AsNoTracking().ToListAsync(cancellationToken);

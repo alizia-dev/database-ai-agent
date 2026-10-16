@@ -52,7 +52,7 @@ try
         .AddSecurityModule(builder.Configuration, builder.Environment)
         .AddBillingModule(builder.Configuration)
         .AddDatabaseModule(builder.Configuration)
-        .AddToolsModule()
+        .AddToolsModule(builder.Configuration)
         .AddRagModule()
         .AddAgentModule();
 

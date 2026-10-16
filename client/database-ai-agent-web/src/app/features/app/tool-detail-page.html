@@ -1,0 +1,233 @@
+<a mat-button routerLink="/app/tools" class="back"><mat-icon>arrow_back</mat-icon>AI tools</a>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (error()) {
+  <p class="notice error" role="alert">{{ error() }}</p>
+}
+
+@if (tool(); as t) {
+  <h1 class="page-title"><code>{{ t.summary.name }}</code></h1>
+  <div class="head">
+    <span class="badge" [attr.data-status]="t.summary.status">{{ statusLabels[t.summary.status] }}</span>
+    <span class="badge" [attr.data-tone]="tone(t.summary.risk)">{{ t.summary.operation }} · {{ t.summary.risk }} risk</span>
+    @if (t.requiresConfirmation) {
+      <span class="badge" data-tone="warn">Asks for confirmation before every run</span>
+    }
+  </div>
+  <p class="muted">Runs {{ t.summary.procedureName }}. {{ t.summary.description }}</p>
+
+  @if (t.summary.disabledReason !== 'None') {
+    <p class="notice" role="status">{{ disabledReasons[t.summary.disabledReason] }}</p>
+  }
+  @if (t.unsupportedReason) {
+    <p class="notice error" role="alert">{{ t.unsupportedReason }}</p>
+  }
+
+  <div class="detail-grid">
+    <mat-card appearance="outlined">
+      <mat-card-header><mat-card-title>Classification</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <ul class="reasons">
+          @for (r of t.classificationReasons; track r) {
+            <li>{{ r }}</li>
+          }
+        </ul>
+
+        @if (canManage()) {
+          <div class="actions">
+            @switch (t.summary.status) {
+              @case ('Enabled') {
+                <button mat-stroked-button type="button" (click)="disable()" [disabled]="busy()">Disable</button>
+              }
+              @case ('Rejected') {
+                <p>Rejected{{ t.rejectionReason ? ': ' + t.rejectionReason : '' }}.</p>
+                <button mat-stroked-button type="button" (click)="reopen()" [disabled]="busy()">Reopen for review</button>
+              }
+              @default {
+                @if (t.canApprove) {
+                  @if (t.requiresConfirmation) {
+                    <mat-checkbox [(ngModel)]="acknowledge">I understand this tool changes data in our database.</mat-checkbox>
+                  }
+                  <button mat-flat-button type="button" (click)="approve()" [disabled]="busy() || (t.requiresConfirmation && !acknowledge)">
+                    <mat-icon>check</mat-icon>Approve
+                  </button>
+                } @else if (t.approvalBlockedReason) {
+                  <p class="muted" role="note">Cannot be approved: {{ t.approvalBlockedReason }}</p>
+                }
+                <mat-form-field appearance="outline" class="reason">
+                  <mat-label>Reason for rejecting (optional)</mat-label>
+                  <input matInput [(ngModel)]="rejectionReason" maxlength="500" />
+                </mat-form-field>
+                <button mat-stroked-button type="button" (click)="reject()" [disabled]="busy()">Reject</button>
+              }
+            }
+          </div>
+
+          @if (t.canConfirmReadOnly) {
+            <div class="confirm-read-only">
+              <p>
+                The connection's account cannot see this procedure's definition, so it is treated as a write. If you know it only
+                reads data you can confirm it. It will still run in a read-only transaction.
+              </p>
+              <mat-checkbox [(ngModel)]="confirmReadOnly">I confirm this procedure only reads data.</mat-checkbox>
+              <button mat-stroked-button type="button" (click)="markReadOnly()" [disabled]="busy() || !confirmReadOnly">Confirm read-only</button>
+            </div>
+          }
+        }
+      </mat-card-content>
+    </mat-card>
+
+    @if (canManage()) {
+      <mat-card appearance="outlined">
+        <mat-card-header><mat-card-title>Settings</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <form class="settings" (ngSubmit)="save()">
+            <mat-form-field appearance="outline">
+              <mat-label>Tool name</mat-label>
+              <input matInput name="name" [(ngModel)]="form.name" required maxlength="64" pattern="[a-z][a-z0-9_]*" />
+              <mat-hint>Lowercase letters, digits and underscores.</mat-hint>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Description for the assistant</mat-label>
+              <textarea matInput name="description" [(ngModel)]="form.description" required maxlength="1000" rows="3"></textarea>
+            </mat-form-field>
+            @for (p of t.parameters; track p.name) {
+              <mat-form-field appearance="outline">
+                <mat-label>{{ p.name }} description</mat-label>
+                <input matInput [name]="'pd-' + p.name" [(ngModel)]="form.parameterDescriptions[p.name]" maxlength="500" />
+              </mat-form-field>
+            }
+            <div class="limits">
+              <mat-form-field appearance="outline">
+                <mat-label>Timeout (seconds)</mat-label>
+                <input matInput type="number" name="timeout" [(ngModel)]="form.timeoutSeconds" min="1" max="300" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Max rows</mat-label>
+                <input matInput type="number" name="rows" [(ngModel)]="form.maxRows" min="1" max="10000" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Max result (KB)</mat-label>
+                <input matInput type="number" name="bytes" [(ngModel)]="form.maxResultKilobytes" min="1" max="10240" />
+              </mat-form-field>
+            </div>
+            <fieldset class="roles">
+              <legend>Roles allowed to use this tool</legend>
+              @for (r of roles; track r) {
+                <mat-checkbox [checked]="form.allowedRoles.includes(r)" (change)="toggleRole(r, $event.checked)">{{ r }}</mat-checkbox>
+              }
+            </fieldset>
+            <button mat-flat-button type="submit" [disabled]="busy()">Save changes</button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <mat-card appearance="outlined">
+      <mat-card-header><mat-card-title>Test run</mat-card-title></mat-card-header>
+      <mat-card-content>
+        @if (t.summary.status !== 'Enabled') {
+          <p class="muted">Approve the tool to run it.</p>
+        } @else if (!canExecute()) {
+          <p class="muted">You do not have permission to run tools.</p>
+        } @else {
+          <form class="settings" (ngSubmit)="run()">
+            @for (p of t.parameters; track p.name) {
+              @if (p.type === 'Boolean') {
+                <mat-checkbox [name]="'arg-' + p.name" [(ngModel)]="args[p.name]">{{ p.name }}</mat-checkbox>
+              } @else {
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ p.name }}{{ p.required ? '' : ' (optional)' }}</mat-label>
+                  <input matInput [type]="inputType(p)" [name]="'arg-' + p.name" [(ngModel)]="args[p.name]" [required]="p.required" />
+                  @if (p.description) {
+                    <mat-hint>{{ p.description }}</mat-hint>
+                  }
+                </mat-form-field>
+              }
+            }
+            <button mat-flat-button type="submit" [disabled]="busy()"><mat-icon>play_arrow</mat-icon>Run</button>
+          </form>
+
+          @if (result(); as r) {
+            <div class="result" role="status">
+              @switch (r.outcome) {
+                @case ('ConfirmationRequired') {
+                  <p class="notice"><strong>Confirmation needed.</strong> {{ r.confirmationPrompt }}</p>
+                  <button mat-flat-button type="button" (click)="run(true)" [disabled]="busy()">Confirm and run</button>
+                  <button mat-button type="button" (click)="result.set(null)">Cancel</button>
+                }
+                @case ('Succeeded') {
+                  <p>{{ r.message }} ({{ r.durationMs }} ms, retrieved {{ r.retrievedAt | date: 'mediumTime' }})</p>
+                  @if (r.columns.length > 0) {
+                    <div class="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            @for (c of r.columns; track $index) {
+                              <th scope="col">{{ c }}</th>
+                            }
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (row of r.rows; track $index) {
+                            <tr>
+                              @for (cell of row; track $index) {
+                                <td>{{ display(cell) }}</td>
+                              }
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                  @if ((r.outputValues | json) !== '{}') {
+                    <p>Output values: <code>{{ r.outputValues | json }}</code></p>
+                  }
+                }
+                @default {
+                  <p class="notice error" role="alert">{{ r.message }}</p>
+                  @if (r.argumentErrors) {
+                    <ul class="reasons">
+                      @for (e of argumentErrors(r); track e.name) {
+                        <li><code>{{ e.name }}</code>: {{ e.message }}</li>
+                      }
+                    </ul>
+                  }
+                }
+              }
+            </div>
+          }
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <mat-card-header><mat-card-title>Recent runs</mat-card-title></mat-card-header>
+      <mat-card-content>
+        @if (t.recentExecutions.length === 0) {
+          <p class="muted">No runs yet.</p>
+        } @else {
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th scope="col">When</th><th scope="col">Result</th><th scope="col">Rows</th><th scope="col">Duration</th></tr>
+              </thead>
+              <tbody>
+                @for (e of t.recentExecutions; track e.id) {
+                  <tr>
+                    <td>{{ e.startedAt | date: 'short' }}</td>
+                    <td>{{ e.status }}{{ e.reasonCode ? ' (' + e.reasonCode + ')' : '' }}</td>
+                    <td>{{ e.rowCount }}{{ e.truncated ? '+' : '' }}</td>
+                    <td>{{ e.durationMs }} ms</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

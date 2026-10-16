@@ -40,7 +40,32 @@ internal sealed class CachedPermissionService(IServiceScopeFactory scopeFactory,
         return permissions;
     }
 
-    public void Invalidate(Guid userId) => cache.Remove(Key(userId));
+    public async Task<string?> GetRoleAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (cache.TryGetValue(RoleKey(userId), out string? cached))
+        {
+            return cached;
+        }
+
+        CancellationToken resetToken;
+        lock (_resetLock)
+        {
+            resetToken = _reset.Token;
+        }
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var role = await scope.ServiceProvider.GetRequiredService<IRolePermissionRepository>().GetRoleForActiveUserAsync(userId, cancellationToken);
+        cache.Set(RoleKey(userId), role, new MemoryCacheEntryOptions()
+            .SetAbsoluteExpiration(CacheDuration)
+            .AddExpirationToken(new CancellationChangeToken(resetToken)));
+        return role;
+    }
+
+    public void Invalidate(Guid userId)
+    {
+        cache.Remove(Key(userId));
+        cache.Remove(RoleKey(userId));
+    }
 
     public void InvalidateAll()
     {
@@ -64,4 +89,6 @@ internal sealed class CachedPermissionService(IServiceScopeFactory scopeFactory,
     }
 
     private static string Key(Guid userId) => $"permissions:{userId:N}";
+
+    private static string RoleKey(Guid userId) => $"role:{userId:N}";
 }

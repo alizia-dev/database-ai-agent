@@ -88,6 +88,8 @@ public static class DependencyInjection
         services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
         services.AddScoped<IDatabaseConnectionRepository, DatabaseConnectionRepository>();
         services.AddScoped<ISchemaMetadataRepository, SchemaMetadataRepository>();
+        services.AddScoped<IToolRepository, ToolRepository>();
+        services.AddScoped<IToolExecutionRepository, ToolExecutionRepository>();
     }
 
     /// <summary>

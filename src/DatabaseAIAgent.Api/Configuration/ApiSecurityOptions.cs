@@ -23,6 +23,10 @@ public sealed class ApiSecurityOptions
     [Range(1, 10_000)]
     public int ConnectionTestRateLimitPermitsPerMinute { get; set; } = 10;
 
+    /// <summary>Per-user limit for tool executions (each one runs a procedure on the customer database).</summary>
+    [Range(1, 10_000)]
+    public int ToolExecutionRateLimitPermitsPerMinute { get; set; } = 30;
+
     /// <summary>Maximum request body in bytes. File uploads get their own, explicit limits.</summary>
     [Range(1_024, 100 * 1024 * 1024)]
     public long MaxRequestBodyBytes { get; set; } = 1 * 1024 * 1024;

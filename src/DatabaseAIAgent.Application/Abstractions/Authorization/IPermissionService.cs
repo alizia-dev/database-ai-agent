@@ -11,6 +11,9 @@ public interface IPermissionService
     async Task<bool> HasPermissionAsync(Guid userId, string permission, CancellationToken cancellationToken) =>
         (await GetPermissionsAsync(userId, cancellationToken)).Contains(permission);
 
+    /// <summary>The user's current role from the database (not from the token); null for unknown or inactive users.</summary>
+    Task<string?> GetRoleAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>Drops cached permissions for one user (e.g. after a role change).</summary>
     void Invalidate(Guid userId);
 
